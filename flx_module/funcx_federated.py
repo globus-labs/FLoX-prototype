@@ -70,7 +70,7 @@ def train_model(json_model_config,
     return model_weights
 
 
-def create_training_function(get_data = get_data, process_data=process_data, train_model=train_model):
+def create_training_function(get_data=get_data, process_data=process_data, train_model=train_model):
     
     def training_function(json_model_config, 
                           global_model_weights):
@@ -84,7 +84,7 @@ def create_training_function(get_data = get_data, process_data=process_data, tra
         # process data
         (x_train, y_train) = process_data(x_train, y_train)
 
-        model_weights=train_model(json_model_config, global_model_weights, x_train, y_train)
+        model_weights = train_model(json_model_config, global_model_weights, x_train, y_train)
         np_model_weights = np.asarray(model_weights, dtype=object)
 
         return {"model_weights":np_model_weights, "samples_count": x_train.shape[0]}
@@ -107,7 +107,7 @@ def federated_average(global_model, endpoint_ids, get_data = get_data, process_d
     gm_weights_np = np.asarray(gm_weights, dtype=object)
 
     # compile the training function
-    training_function = create_training_function()
+    training_function = create_training_function(get_data, process_data, train_model)
     
     # train the MNIST model on each of the endpoints and return the result, sending the global weights to each edge
     tasks = []

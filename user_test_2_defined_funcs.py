@@ -29,8 +29,22 @@ global_model = keras.Sequential(
 
 global_model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
+def get_new_data():
+    from tensorflow import keras
+    import numpy as np
+
+    num_samples = 20
+
+    (x_train, y_train), _ = keras.datasets.mnist.load_data()
+    
+    # take a random set of images
+    idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+    x_train = x_train[idx]
+    y_train = y_train[idx]
+
+    return (x_train, y_train)
+
 federated_average(global_model=global_model, 
                   endpoint_ids=endpoint_ids,
+                  get_data=get_new_data,
                   weighted=False)
-
-hello_world()
