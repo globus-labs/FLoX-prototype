@@ -6,44 +6,82 @@ from tensorflow.keras import layers
 from funcx.sdk.client import FuncXClient
 from funcx.sdk.executor import FuncXExecutor
 
-def hello_world():
-    print("Hello world!")
-
-def get_data():
-    from tensorflow import keras
-    import numpy as np
-
-    num_samples = 10
-
-    (x_train, y_train), _ = keras.datasets.mnist.load_data()
+def get_local_data(path_dir='/home/pi/datasets', x_train_path="mnist_x_train.npy", y_train_path="mnist_y_train.npy", preprocess=None, preprocessing_function=None):
+    '''
+    Returns (x_train, y_train) given the edge directory and filenames.
     
-    # take a random set of images
-    idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
-    x_train = x_train[idx]
-    y_train = y_train[idx]
+    '''
+    import numpy as np
+    import os
+    import collections
+    
+    x_train_path_file = os.sep.join([path_dir, x_train_path])
+    y_train_path_file = os.sep.join([path_dir, x_train_path])
+
+    with open(x_train_path_file, 'rb') as f:
+        x_train = np.load(f)
+        
+    with open(y_train_path_file, 'rb') as f:
+        y_train = np.load(f)
+
+    if preprocess:
+        # check if a valid function was given
+        if not preprocessing_function or not isinstance(preprocessing_function, collections.Callable):
+            raise TypeError('preprocessing_function is not a function. Please provide a valid function in your call')
+        
+        (x_train, y_train) = preprocessing_function(x_train, y_train)
 
     return (x_train, y_train)
 
-def process_data(x_train, y_train):
+
+
+def get_keras_data(keras_dataset, preprocess=True, num_samples=None):
+    '''
+    Returns (x_train, y_train) of a chosen built-in Keras dataset.
+    Options: ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+    
+    '''
     from tensorflow import keras
     import numpy as np
 
-    num_classes = 10
+    available_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+    dataset_mapping= {
+        'mnist': keras.datasets.mnist,
+        'fashion_mnist': keras.datasets.fashion_mnist,
+        'cifar10': keras.datasets.cifar10,
+        'cifar100': keras.datasets.cifar100,
+        'imdb': keras.datasets.imdb,
+        'reuters': keras.datasets.reuters,
+        'boston_housing': keras.datasets.boston_housing
+    }
+    image_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
 
-    # Scale images to the [0, 1] range
-    x_train = x_train.astype("float32") / 255
+    # check if the dataset exists
+    if keras_dataset not in available_datasets:
+        raise Exception(f"Please select one of the built-in Keras datasets: {available_datasets}")
 
-    # Make sure images have shape (28, 28, 1)
-    x_train = np.expand_dims(x_train, -1)
-    print("x_train shape:", x_train.shape)
-    print(x_train.shape[0], "train samples")
+    else:
+        (x_train, y_train), _ = dataset_mapping[keras_dataset].load_data()
 
-    # convert class vectors to binary class matrices
-    y_train = keras.utils.to_categorical(y_train, num_classes)
+        # take a random set of images
+        if num_samples:
+            idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+            x_train = x_train[idx]
+            y_train = y_train[idx]
 
-    return (x_train, y_train)
+        # do default image processing for built-in Keras images
+        if preprocess:
+            if keras_dataset in image_datasets:
+                # Scale images to the [0, 1] range
+                x_train = x_train.astype("float32") / 255
 
-def train_model(json_model_config, 
+                # Make sure images have shape (num_samples, x, y, 1) if working with MNIST images
+                if x_train.shape[-1] not in [1, 3]:
+                    x_train = np.expand_dims(x_train, -1)
+
+        return (x_train, y_train)
+
+def train_default_model(json_model_config, 
                 global_model_weights,
                 x_train,
                 y_train,
@@ -67,27 +105,75 @@ def train_model(json_model_config,
     model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=0.1)
     model_weights = model.get_weights()
 
-    return model_weights
+    # transform to a numpy array
+    np_model_weights = np.asarray(model_weights, dtype=object)
+
+    return np_model_weights
 
 
-def create_training_function(get_data=get_data, process_data=process_data, train_model=train_model):
+def create_training_function(train_model=train_default_model, 
+                            data_source: str = "keras",
+                            path_dir='/home/pi/datasets', 
+                            x_train_path="mnist_x_train.npy", 
+                            y_train_path="mnist_y_train.npy", 
+                            preprocess_local=None, 
+                            preprocessing_function=None, 
+                            keras_dataset = "mnist", 
+                            preprocess_keras=True, 
+                            num_samples=None,
+                            batch_size=128,
+                            epochs=10,
+                            loss="categorical_crossentropy",
+                            optimizer="adam", 
+                            metrics=["accuracy"]):
     
     def training_function(json_model_config, 
-                          global_model_weights):
+                          global_model_weights,
+                          data_source: str = data_source,
+                          path_dir=path_dir, 
+                          x_train_path=x_train_path, 
+                          y_train_path=y_train_path, 
+                          preprocess_local=preprocess_local, 
+                          preprocessing_function=preprocessing_function,
+                          keras_dataset = keras_dataset, 
+                          preprocess_keras=preprocess_keras, 
+                          num_samples=num_samples,
+                          batch_size=batch_size,
+                          epochs=epochs,
+                          loss=loss,
+                          optimizer=optimizer, 
+                          metrics=metrics):
 
         # import all the dependencies required for funcX functions)
         import numpy as np
 
-        # get data
-        (x_train, y_train) = get_data()
+        if data_source == 'local':
+            (x_train, y_train) = get_local_data(path_dir, 
+                          x_train_path, 
+                          y_train_path, 
+                          preprocess_local, 
+                          preprocessing_function)
 
-        # process data
-        (x_train, y_train) = process_data(x_train, y_train)
+        elif data_source == 'keras':
+            (x_train, y_train) = get_keras_data(keras_dataset, 
+                                                preprocess_keras, 
+                                                num_samples)
 
-        model_weights = train_model(json_model_config, global_model_weights, x_train, y_train)
-        np_model_weights = np.asarray(model_weights, dtype=object)
+        else:
+            raise Exception("Please choose one of data sources: ['local', 'keras']")
 
-        return {"model_weights":np_model_weights, "samples_count": x_train.shape[0]}
+        # consider switching to args* and kwargs** in case of a custom training function
+        model_weights = train_model(json_model_config, 
+                                    global_model_weights, 
+                                    x_train, 
+                                    y_train,
+                                    batch_size,
+                                    epochs,
+                                    loss,
+                                    optimizer, 
+                                    metrics)
+
+        return {"model_weights":model_weights, "samples_count": x_train.shape[0]}
     
     return training_function
 
@@ -99,7 +185,7 @@ def get_edge_weights(sample_counts):
     fractions = sample_counts/total
     return fractions
 
-def federated_average(global_model, endpoint_ids, get_data = get_data, process_data=process_data, train_model=train_model, weighted=False):
+def federated_average(global_model, endpoint_ids, train_model=train_default_model, preprocessing_function=None, weighted=False):
     fx = FuncXExecutor(FuncXClient())
 
     # get the model's architecture and weights
@@ -108,7 +194,7 @@ def federated_average(global_model, endpoint_ids, get_data = get_data, process_d
     gm_weights_np = np.asarray(gm_weights, dtype=object)
 
     # compile the training function
-    training_function = create_training_function(get_data, process_data, train_model)
+    training_function = create_training_function(train_model, preprocessing_function)
     
     # train the MNIST model on each of the endpoints and return the result, sending the global weights to each edge
     tasks = []
@@ -140,3 +226,13 @@ def federated_average(global_model, endpoint_ids, get_data = get_data, process_d
     print('Trained Federated Model')
 
     return global_model
+
+
+def deploy_function(function, endpoint_ids):
+    fx = FuncXExecutor(FuncXClient())
+    tasks = []
+    for e in endpoint_ids:
+        tasks.append(fx.submit(function, 
+                                endpoint_id=e))
+
+    return tasks
