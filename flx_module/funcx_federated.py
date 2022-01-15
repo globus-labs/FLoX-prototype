@@ -75,7 +75,7 @@ def create_training_function(get_data=get_data, process_data=process_data, train
     def training_function(json_model_config, 
                           global_model_weights):
 
-        # import all the dependencies Irequired for funcX functions)
+        # import all the dependencies required for funcX functions)
         import numpy as np
 
         # get data
@@ -102,6 +102,7 @@ def get_edge_weights(sample_counts):
 def federated_average(global_model, endpoint_ids, get_data = get_data, process_data=process_data, train_model=train_model, weighted=False):
     fx = FuncXExecutor(FuncXClient())
 
+    # get the model's architecture and weights
     json_config = global_model.to_json()
     gm_weights = global_model.get_weights()
     gm_weights_np = np.asarray(gm_weights, dtype=object)

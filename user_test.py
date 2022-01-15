@@ -1,6 +1,6 @@
 # works well when tested on Linux-based system. 
 # Causes the 'package fcntl not found' error on windows
-from flx_module.funcx_federated import hello_world
+#from flx_module.funcx_federated import hello_world
 from flx_module.funcx_federated import federated_average
 import flx_module.funcx_federated
 
@@ -33,4 +33,4 @@ federated_average(global_model=global_model,
                   endpoint_ids=endpoint_ids,
                   weighted=False)
 
-hello_world()
+#hello_world()
