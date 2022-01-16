@@ -1,6 +1,6 @@
 
 
-def process_data(x_train, y_train, num_samples=100):
+def preprocess_data(x_train, y_train, num_samples=100):
     from tensorflow import keras
     import numpy as np
 
