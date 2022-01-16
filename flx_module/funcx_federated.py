@@ -81,7 +81,11 @@ def get_keras_data(keras_dataset, preprocess=True, num_samples=None):
                     x_train = np.expand_dims(x_train, -1)
 
                 # convert class vectors to binary class matrices
-                num_classes=10
+                if keras_dataset == 'cifar100':
+                    num_classes=100
+                else:
+                    num_classes=10
+                    
                 y_train = keras.utils.to_categorical(y_train, num_classes)
 
         return (x_train, y_train)
