@@ -6,6 +6,18 @@ from tensorflow.keras import layers
 from funcx.sdk.client import FuncXClient
 from funcx.sdk.executor import FuncXExecutor
 
+def federated_decorator(func):
+    def wrapper(*args, **kwargs):
+        fx = FuncXExecutor(FuncXClient())
+        tasks = []
+        for e in kwargs["endpoint_ids"]:
+            tasks.append(fx.submit(func, 
+                                   **kwargs,
+                                    endpoint_id=e))
+        return tasks
+    
+    return wrapper
+
 # path_dir='/home/pi/datasets', x_train_path="mnist_x_train.npy", y_train_path="mnist_y_train.npy"
 def get_local_data(x_train_path, y_train_path, path_dir=".", preprocess=None, preprocessing_function=None):
     '''
@@ -121,30 +133,6 @@ def train_default_model(json_model_config,
     np_model_weights = np.asarray(model_weights, dtype=object)
 
     return np_model_weights
-
-def default_model_inference(json_model_config, 
-                global_model_weights,
-                x_train,
-                y_train,
-                epochs=10,
-                loss="categorical_crossentropy",
-                optimizer="adam", 
-                metrics=["accuracy"],
-                **extra_compiler_arguments):
-    # import dependencies
-    from tensorflow import keras
-    import numpy as np
-
-    # create the model
-    model = keras.models.model_from_json(json_model_config)
-
-    # compile the model and set weights to the global model
-    model.compile(loss=loss, optimizer=optimizer, metrics=metrics, **extra_compiler_arguments)
-    model.set_weights(global_model_weights)
-
-    # train the model on the local data and extract the weights
-
-    return "Thanks"
 
 
 def create_training_function(train_model=train_default_model, 
@@ -296,10 +284,96 @@ def federated_average(global_model,
     return global_model
 
 
-def run_inference(model, edgepoint, data_source="keras"):
-    # create the training function
-        # retrieve & prepare the data
-        # run inference at intervals
-        # save the results
-    # send it to the edge
-    pass
+def default_model_inference(json_model_config, 
+                global_model_weights,
+                x_train,
+                y_train,
+                loss="categorical_crossentropy",
+                optimizer="adam", 
+                metrics=["accuracy"],
+                **extra_compiler_arguments):
+    # import dependencies
+    from tensorflow import keras
+    import numpy as np
+
+    # create the model
+    model = keras.models.model_from_json(json_model_config)
+
+    # compile the model and set weights to the global model
+    model.compile(loss=loss, optimizer=optimizer, metrics=metrics, **extra_compiler_arguments)
+    model.set_weights(global_model_weights)
+
+    # train the model on the local data and extract the weights
+    predictions = model.predict(x_train)
+
+    # save it in a file
+
+    return "Thanks"
+
+
+def create_inference_function(data_source: str = "keras",
+                            preprocessing_function=None,
+                            path_dir='/home/pi/datasets', 
+                            x_train_path="mnist_x_train.npy", 
+                            y_train_path="mnist_y_train.npy", 
+                            preprocess_local=True, 
+                            keras_dataset = "mnist", 
+                            preprocess_keras=True, 
+                            loss="categorical_crossentropy",
+                            optimizer="adam", 
+                            metrics=["accuracy"],
+                            get_keras_data=get_keras_data,
+                            get_local_data=get_local_data,
+                            get_custom_data=None,
+                            **kwargs
+):
+    
+    def inference_function(json_model_config, 
+                          global_model_weights, 
+                          num_samples=None,
+                          loops=2,
+                          **kwargs
+):
+
+        # import dependencies
+        from tensorflow import keras
+        import numpy as np
+
+        # create the model
+        model = keras.models.model_from_json(json_model_config)
+
+        # compile the model and set weights to the global model
+        model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+        model.set_weights(global_model_weights)
+
+        for i in range(loops):
+        # train the model on the local data and extract the weights
+
+            if data_source == 'local':
+                (x_train, y_train) = get_local_data(path_dir=path_dir, 
+                            x_train_path=x_train_path, 
+                            y_train_path=y_train_path, 
+                            preprocess=preprocess_local, 
+                            preprocessing_function=preprocessing_function)
+
+            elif data_source == 'keras':
+                (x_train, y_train) = get_keras_data(keras_dataset, 
+                                                    preprocess_keras, 
+                                                    num_samples)
+
+            elif data_source == 'custom':
+                if callable(get_custom_data):
+                    (x_train, y_train) = get_custom_data()
+                else:
+                    raise TypeError('preprocessing_function is not a function. Please provide a valid function in your call')
+
+            else:
+                raise Exception("Please choose one of data sources: ['local', 'keras', 'pass']")
+
+            predictions = model.predict(x_train)
+
+            # save the stats in a file for future retrieval
+
+        return "The inference process is over"
+    
+    return inference_function
