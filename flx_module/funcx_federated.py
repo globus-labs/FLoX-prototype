@@ -122,30 +122,6 @@ def train_default_model(json_model_config,
 
     return np_model_weights
 
-def default_model_inference(json_model_config, 
-                global_model_weights,
-                x_train,
-                y_train,
-                epochs=10,
-                loss="categorical_crossentropy",
-                optimizer="adam", 
-                metrics=["accuracy"],
-                **extra_compiler_arguments):
-    # import dependencies
-    from tensorflow import keras
-    import numpy as np
-
-    # create the model
-    model = keras.models.model_from_json(json_model_config)
-
-    # compile the model and set weights to the global model
-    model.compile(loss=loss, optimizer=optimizer, metrics=metrics, **extra_compiler_arguments)
-    model.set_weights(global_model_weights)
-
-    # train the model on the local data and extract the weights
-
-    return "Thanks"
-
 
 def create_training_function(train_model=train_default_model, 
                             data_source: str = "keras",
