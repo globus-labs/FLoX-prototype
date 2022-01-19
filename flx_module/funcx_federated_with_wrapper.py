@@ -111,8 +111,7 @@ def train_default_model(json_model_config,
                 epochs=10,
                 loss="categorical_crossentropy",
                 optimizer="adam", 
-                metrics=["accuracy"],
-                **extra_compiler_arguments):
+                metrics=["accuracy"]):
 
     # import dependencies
     from tensorflow import keras
@@ -122,7 +121,7 @@ def train_default_model(json_model_config,
     model = keras.models.model_from_json(json_model_config)
 
     # compile the model and set weights to the global model
-    model.compile(loss=loss, optimizer=optimizer, metrics=metrics, **extra_compiler_arguments)
+    model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
     model.set_weights(global_model_weights)
 
     # train the model on the local data and extract the weights
@@ -193,8 +192,7 @@ def create_training_function(train_model=train_default_model,
                                             epochs=epochs,
                                             loss=loss,
                                             optimizer=optimizer, 
-                                            metrics=metrics,
-                                            **kwargs)
+                                            metrics=metrics)
 
         return {"model_weights":model_weights, "samples_count": x_train.shape[0]}
     
@@ -332,12 +330,14 @@ def create_inference_function(data_source: str = "keras",
                           global_model_weights, 
                           num_samples=None,
                           loops=2,
+                          time_interval=0,
                           **kwargs
 ):
 
         # import dependencies
         from tensorflow import keras
         import numpy as np
+        import time
 
         # create the model
         model = keras.models.model_from_json(json_model_config)
@@ -371,6 +371,9 @@ def create_inference_function(data_source: str = "keras",
                 raise Exception("Please choose one of data sources: ['local', 'keras', 'pass']")
 
             predictions = model.predict(x_train)
+
+            # wait for time_interval seconds 
+            time.sleep(time_interval)
 
             # save the stats in a file for future retrieval
 
