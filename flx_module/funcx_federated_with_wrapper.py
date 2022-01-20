@@ -7,9 +7,43 @@ from funcx.sdk.client import FuncXClient
 from funcx.sdk.executor import FuncXExecutor
 
 def federated_decorator(func):
+    """
+    Returns a wrapped function that can be deployed to funcx endpoints when given endpoint_ids
+
+    Parameters
+    ----------
+    func: function
+        the function to be deployed to funcx endpoints
+
+    Returns
+    -------
+    wrapper: function
+        the wrapped function func
+    
+    """
     def wrapper(*args, **kwargs):
+        """
+        Returns a wrapped function that is deployed to specified funcx endpoints.
+
+        Parameters
+        ----------
+        *args: positional arguments
+
+        **kwargs: keyword arguments
+            when using a wrapped function, you need to pass in parameters as 
+            keywords
+
+        Returns
+        -------
+        tasks: list
+            contains funcx task objects from which the original result can be retrieved with
+            task[i].result()
+
+        """
         fx = FuncXExecutor(FuncXClient())
         tasks = []
+
+        # for each endpoint, submit the function with **kwargs to it
         for e in kwargs["endpoint_ids"]:
             tasks.append(fx.submit(func, 
                                    **kwargs,
@@ -19,18 +53,42 @@ def federated_decorator(func):
     return wrapper
 
 # path_dir='/home/pi/datasets', x_train_path="mnist_x_train.npy", y_train_path="mnist_y_train.npy"
-def get_local_data(x_train_path, y_train_path, path_dir=".", preprocess=None, preprocessing_function=None):
-    '''
-    Returns (x_train, y_train) given the edge directory and filenames.
+def get_local_data(x_train_name, y_train_name, path_dir=".", preprocess=False, preprocessing_function=None):
+    """
+    Retrieves a local dataset given the path and filenames. Optionally, also processes the data
+    with the given processing_function.
+
+    Parameters
+    ----------
+    x_train_name: str
+        filename specifying x_train
+
+    y_train_name: str
+        filename specifying y_train
+
+    path_dir: str
+        path to the folder where x_train_name and y_train_name reside
+
+    preprocess: boolean
+        if True, calls preprocessing_function on (x_train, y_train)
+
+    preprocessing_function: function
+        a custom user-provided function that processes (x_train, y_train) and outputs 
+        a tuple (x_train, y_train)
+
+    Returns
+    -------
+    (x_train, y_train): tuple
+        returns the loaded (and optionally preprocessed) (x_train, y_train)
     
-    '''
+    
+    """
     import numpy as np
     import os
-    import collections
     
     # construct the path
-    x_train_path_file = os.sep.join([path_dir, x_train_path])
-    y_train_path_file = os.sep.join([path_dir, y_train_path])
+    x_train_path_file = os.sep.join([path_dir, x_train_name])
+    y_train_path_file = os.sep.join([path_dir, y_train_name])
 
     # load the files
     with open(x_train_path_file, 'rb') as f:
@@ -43,19 +101,40 @@ def get_local_data(x_train_path, y_train_path, path_dir=".", preprocess=None, pr
     if preprocess:
         # check if a valid function was given
         if not preprocessing_function or not callable(preprocessing_function):
-            raise TypeError('preprocessing_function is not a function. Please provide a valid function in your call')
+            raise TypeError('preprocessing_function is not a function. \
+                            Please provide a valid function in your call')
         
         (x_train, y_train) = preprocessing_function(x_train, y_train)
 
     return (x_train, y_train)
 
 
-def get_keras_data(keras_dataset, preprocess=True, num_samples=None):
-    '''
-    Returns (x_train, y_train) of a chosen built-in Keras dataset. Also preprocesses the image data by default.
-    Options: ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+def get_keras_data(keras_dataset='mnist', num_samples=None, preprocess=True, preprocessing_function=None):
+    """
+    Returns (x_train, y_train) of a chosen built-in Keras dataset. 
+    Also preprocesses the image datasets (mnist, fashion_mnist, cifar10, cifar100) by default.
+
+    Parameters
+    ----------
+    keras_dataset: str
+        one of the available Keras datasets: 
+        ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+
+    num_samples: int 
+        randomly samples n data points from (x_train, y_train). Set to None by default.
+
+    preprocess: boolean
+        if True, preprocesses (x_train, y_train) 
+
+    preprocessing_function: function
+        a custom user-provided function that processes (x_train, y_train) and outputs 
+        a tuple (x_train, y_train)
+
+    Returns
+    -------
+
     
-    '''
+    """
     from tensorflow import keras
     import numpy as np
 
@@ -84,23 +163,27 @@ def get_keras_data(keras_dataset, preprocess=True, num_samples=None):
             x_train = x_train[idx]
             y_train = y_train[idx]
 
-        # do default image processing for built-in Keras images
         if preprocess:
-            if keras_dataset in image_datasets:
-                # Scale images to the [0, 1] range
-                x_train = x_train.astype("float32") / 255
+            if preprocessing_function and callable(preprocessing_function):
+                (x_train, y_train) = preprocessing_function(x_train, y_train)
 
-                # Make sure images have shape (num_samples, x, y, 1) if working with MNIST images
-                if x_train.shape[-1] not in [1, 3]:
-                    x_train = np.expand_dims(x_train, -1)
+            else:
+                # do default image processing for built-in Keras images    
+                if keras_dataset in image_datasets:
+                    # Scale images to the [0, 1] range
+                    x_train = x_train.astype("float32") / 255
 
-                # convert class vectors to binary class matrices
-                if keras_dataset == 'cifar100':
-                    num_classes=100
-                else:
-                    num_classes=10
-                    
-                y_train = keras.utils.to_categorical(y_train, num_classes)
+                    # Make sure images have shape (num_samples, x, y, 1) if working with MNIST images
+                    if x_train.shape[-1] not in [1, 3]:
+                        x_train = np.expand_dims(x_train, -1)
+
+                    # convert class vectors to binary class matrices
+                    if keras_dataset == 'cifar100':
+                        num_classes=100
+                    else:
+                        num_classes=10
+                        
+                    y_train = keras.utils.to_categorical(y_train, num_classes)
 
         return (x_train, y_train)
 
@@ -112,6 +195,39 @@ def train_default_model(json_model_config,
                 loss="categorical_crossentropy",
                 optimizer="adam", 
                 metrics=["accuracy"]):
+    """
+    Conctructs, compiles, and trains a Tensorflow model with provided training data
+
+    Parameters
+    ----------
+    json_model_config: str
+        configuration of the TF model retrieved using model.to_json()
+
+    global_model_weights: numpy array
+        a numpy array with weights of the TF model
+
+    (x_train, y_train): dataset
+        a suitable format for TF's model.fit() function
+
+    epochs: int
+        the number of epochs to train the model for
+
+    (loss, optimizer, metrics): 
+        values for TF's model.compile() function
+
+    Returns
+    -------
+    np_model_weights: numpy array
+        numpy array with updated weights of the TF model
+
+    Notes
+    -----
+    This function does not support more arguments for .fit() or .compile().
+    The fix is as easy as just exposing these parameters within the function.
+    However, there are way too many methods for training models so instead we 
+    invite users to create custom training functions for more complex examples
+    
+    """
 
     # import dependencies
     from tensorflow import keras
@@ -136,13 +252,12 @@ def train_default_model(json_model_config,
 
 def create_training_function(train_model=train_default_model, 
                             data_source: str = "keras",
-                            preprocessing_function=None,
                             path_dir='/home/pi/datasets', 
-                            x_train_path="mnist_x_train.npy", 
-                            y_train_path="mnist_y_train.npy", 
-                            preprocess_local=True, 
+                            x_train_name="mnist_x_train.npy", 
+                            y_train_name="mnist_y_train.npy", 
+                            preprocess=True, 
+                            preprocessing_function=None,
                             keras_dataset = "mnist", 
-                            preprocess_keras=True, 
                             loss="categorical_crossentropy",
                             optimizer="adam", 
                             metrics=["accuracy"],
@@ -151,40 +266,124 @@ def create_training_function(train_model=train_default_model,
                             get_custom_data=None,
                             **kwargs
 ):
+    """
+    Creates a function for loading data and training a model
+
+    Parameters
+    ----------
+    data_source: str
+        the function supports three data sources: "local", "keras", "custom"
+        for "local" and "keras", see get_local_data and get_keras_data functions
+        "custom" is for a user-provided data-retrieving function
+
+    path_dir: str
+        needed when data_sourse="local"; path to x_train and y_train filenames
+
+    x_train_name: str
+        needed when data_sourse="local"; filename for x_train
+
+    y_train_name: str
+        needed when data_sourse="local"; file name for y_train
+
+    preprocess: boolean
+        if True, will attempt to preprocess your data in "local" or "keras" data sources
+        see get_local_data and get_keras_data functions
+
+    preprocessing_function: function
+        user-provided function for processing data in "local" or "keras" data sources
+
+    keras_dataset: str
+        specifies one of the default keras datasets to use if using "keras" data source
+        ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+
+    loss: str
+        loss for TF's model.fit() function
+
+    optimizer: str
+        optimizer for for TF's model.fit() function
+
+    metrics: str/list 
+        metrix for TF's model.fit() function. E.g, metrics=["accuracy"],
+
+    get_keras_data: function
+        default function for get_keras_data
+
+    get_local_data: function
+        default function for get_keras_data
+
+    get_custom_data: function
+        user-provided function for retrieving data
+
+    Returns
+    -------
+    Function for retrieving, processing, and training a Tensorflow model
+
+    Notes
+    -----
+    This function is aimed at simple use cases. 
+    You can construct & easily use any custom training_function with funcX 
     
+    """    
     def training_function(json_model_config, 
                           global_model_weights, 
                           num_samples=None,
                           epochs=10,
                           **kwargs
 ):
+        """
 
+        Parameters
+        ----------
+        json_model_config: str
+        configuration of the TF model retrieved using model.to_json()
+
+        global_model_weights: numpy array
+            a numpy array with weights of the TF model
+
+        num_samples: int
+            if data_source="keras", randomly samples n data points from (x_train, y_train)
+
+        epochs: int
+            the number of epochs to train the model for
+
+        Returns
+        -------
+        model_weights: numpy array
+            updated TF model weights after training on the local data
+
+        samples_counts: int
+            the number of samples the model was trained on. 
+            Can be used to find the weighted average by # of samples seen
+
+        """
         # import all the dependencies required for funcX functions)
         import numpy as np
 
+        # retrieve (and optionally process) the data
         if data_source == 'local':
             (x_train, y_train) = get_local_data(path_dir=path_dir, 
-                          x_train_path=x_train_path, 
-                          y_train_path=y_train_path, 
-                          preprocess=preprocess_local, 
+                          x_train_name=x_train_name, 
+                          y_train_name=y_train_name, 
+                          preprocess=preprocess, 
                           preprocessing_function=preprocessing_function)
 
         elif data_source == 'keras':
-            (x_train, y_train) = get_keras_data(keras_dataset, 
-                                                preprocess_keras, 
-                                                num_samples)
+            (x_train, y_train) = get_keras_data(keras_dataset=keras_dataset, 
+                                                preprocess=preprocess, 
+                                                num_samples=num_samples,
+                                                preprocessing_function=preprocessing_function)
 
         elif data_source == 'custom':
             if callable(get_custom_data):
                 (x_train, y_train) = get_custom_data()
             else:
-                raise TypeError('preprocessing_function is not a function. Please provide a valid function in your call')
+                raise TypeError('preprocessing_function is not a function. \
+                                 Please provide a valid function in your call')
 
         else:
-            raise Exception("Please choose one of data sources: ['local', 'keras', 'pass']")
+            raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
 
-        # consider switching to args* and kwargs** in case of a custom training function
-
+        # train the model
         model_weights = train_model(json_model_config=json_model_config, 
                                             global_model_weights=global_model_weights, 
                                             x_train=x_train, 
@@ -194,17 +393,39 @@ def create_training_function(train_model=train_default_model,
                                             optimizer=optimizer, 
                                             metrics=metrics)
 
+        # return the updated weights and number of samples the model was trained on
         return {"model_weights":model_weights, "samples_count": x_train.shape[0]}
     
     return training_function
 
 def get_edge_weights(sample_counts):
-    '''
-    Returns weights for each model to find the weighted average 
-    '''
+    """
+    Takes an array of numbers and returns their fractions of the total number of samples
+    Can be used to find weights for the weighted_average 
+
+    Parameters
+    ----------
+    sample_counts: numpy array of integers
+
+    Returns
+    -------
+    fractions: numpy array
+    
+    """
     total = sum(sample_counts)
     fractions = sample_counts/total
     return fractions
+
+def find_federated_average(model_weights, weighted=False, calculation_weights=None):
+    if weighted:
+        # find weighted average
+        average_weights = np.average(model_weights, weights=calculation_weights, axis=0)
+        
+    else:
+        # simple average of the weights
+        average_weights = np.mean(model_weights, axis=0)
+
+    return average_weights
 
 def federated_average(global_model, 
                       endpoint_ids, 
@@ -215,17 +436,31 @@ def federated_average(global_model,
                       data_source: str = "keras",
                       preprocessing_function=None,
                       path_dir='/home/pi/datasets', 
-                      x_train_path="mnist_x_train.npy", 
-                      y_train_path="mnist_y_train.npy", 
-                      preprocess_local=None, 
-                      keras_dataset = "mnist", 
-                      preprocess_keras=True, 
+                      x_train_name="mnist_x_train.npy", 
+                      y_train_name="mnist_y_train.npy", 
+                      preprocess=False, 
+                      keras_dataset = "mnist",  
                       loss="categorical_crossentropy",
                       optimizer="adam", 
                       metrics=["accuracy"],
                       get_custom_data=None,
                       **kwargs):
+    """
+    TODO: seems like this function is redundant and can be replaced with a sequence
+    of a few lower-level functions.
 
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    Examples
+    --------
+    # instantiate the funcX executor
+    fx = FuncXExecutor(FuncXClient())
+    
+    """
     fx = FuncXExecutor(FuncXClient())
 
     # get the model's architecture and weights
@@ -237,12 +472,11 @@ def federated_average(global_model,
     training_function = create_training_function(train_model=train_model, 
                                                 data_source = data_source,
                                                 path_dir=path_dir, 
-                                                x_train_path=x_train_path, 
-                                                y_train_path=y_train_path, 
-                                                preprocess_local=preprocess_local, 
+                                                x_train_name=x_train_name, 
+                                                y_train_name=y_train_name, 
+                                                preprocess=preprocess, 
                                                 preprocessing_function=preprocessing_function,
                                                 keras_dataset = keras_dataset, 
-                                                preprocess_keras=preprocess_keras, 
                                                 loss=loss,
                                                 optimizer=optimizer, 
                                                 metrics=metrics,
@@ -282,41 +516,13 @@ def federated_average(global_model,
     return global_model
 
 
-def default_model_inference(json_model_config, 
-                global_model_weights,
-                x_train,
-                y_train,
-                loss="categorical_crossentropy",
-                optimizer="adam", 
-                metrics=["accuracy"],
-                **extra_compiler_arguments):
-    # import dependencies
-    from tensorflow import keras
-    import numpy as np
-
-    # create the model
-    model = keras.models.model_from_json(json_model_config)
-
-    # compile the model and set weights to the global model
-    model.compile(loss=loss, optimizer=optimizer, metrics=metrics, **extra_compiler_arguments)
-    model.set_weights(global_model_weights)
-
-    # train the model on the local data and extract the weights
-    predictions = model.predict(x_train)
-
-    # save it in a file
-
-    return "Thanks"
-
-
 def create_inference_function(data_source: str = "keras",
-                            preprocessing_function=None,
                             path_dir='/home/pi/datasets', 
-                            x_train_path="mnist_x_train.npy", 
-                            y_train_path="mnist_y_train.npy", 
-                            preprocess_local=True, 
+                            x_train_name="mnist_x_train.npy", 
+                            y_train_name="mnist_y_train.npy", 
+                            preprocess=False, 
+                            preprocessing_function=None,
                             keras_dataset = "mnist", 
-                            preprocess_keras=True, 
                             loss="categorical_crossentropy",
                             optimizer="adam", 
                             metrics=["accuracy"],
@@ -325,7 +531,64 @@ def create_inference_function(data_source: str = "keras",
                             get_custom_data=None,
                             **kwargs
 ):
+    """
+    Creates a function for loading data and doing inference on it with a Tensorflow model
+
+    Parameters
+    ----------
+    data_source: str
+        the function supports three data sources: "local", "keras", "custom"
+        for "local" and "keras", see get_local_data and get_keras_data functions
+        "custom" is for a user-provided data-retrieving function
+
+    path_dir: str
+        needed when data_sourse="local"; path to x_train and y_train filenames
+
+    x_train_name: str
+        needed when data_sourse="local"; filename for x_train
+
+    y_train_name: str
+        needed when data_sourse="local"; file name for y_train
+
+    preprocess: boolean
+        if True, will attempt to preprocess your data in "local" or "keras" data sources
+        see get_local_data and get_keras_data functions
+
+    preprocessing_function: function
+        user-provided function for processing data in "local" or "keras" data sources
+
+    keras_dataset: str
+        specifies one of the default keras datasets to use if using "keras" data source
+        ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+
+    loss: str
+        loss for TF's model.fit() function
+
+    optimizer: str
+        optimizer for for TF's model.fit() function
+
+    metrics: str/list 
+        metrix for TF's model.fit() function. E.g, metrics=["accuracy"],
+
+    get_keras_data: function
+        default function for get_keras_data
+
+    get_local_data: function
+        default function for get_keras_data
+
+    get_custom_data: function
+        user-provided function for retrieving data
+
+    Returns
+    -------
+    Function for retrieving, processing, and training a Tensorflow model
+
+    Notes
+    -----
+    This function is aimed at simple use cases. 
+    You can construct & easily use any custom inference_function with funcX 
     
+    """   
     def inference_function(json_model_config, 
                           global_model_weights, 
                           num_samples=None,
@@ -333,7 +596,33 @@ def create_inference_function(data_source: str = "keras",
                           time_interval=0,
                           **kwargs
 ):
+        """
+        A function for doing inference at the edge. 
+        Loads & preprocesses the data, constructs & compiles the model
+        Does so in a for-loop with a chosen time_interval
 
+        Parameters
+        ----------
+        json_model_config: str
+        configuration of the TF model retrieved using model.to_json()
+
+        global_model_weights: numpy array
+            a numpy array with weights of the TF model
+
+        num_samples: int
+            if data_source="keras", randomly samples n data points from (x_train, y_train)
+
+        loops: int
+            the number of loops to run the workflow for
+
+        time_interval: int 
+            number of seconds to wait for before executing the next data-gathering and inference loop
+
+        Returns
+        -------
+        TODO: return stats about the inference process
+
+        """
         # import dependencies
         from tensorflow import keras
         import numpy as np
@@ -351,15 +640,15 @@ def create_inference_function(data_source: str = "keras",
 
             if data_source == 'local':
                 (x_train, y_train) = get_local_data(path_dir=path_dir, 
-                            x_train_path=x_train_path, 
-                            y_train_path=y_train_path, 
-                            preprocess=preprocess_local, 
+                            x_train_name=x_train_name, 
+                            y_train_name=y_train_name, 
+                            preprocess=preprocess, 
                             preprocessing_function=preprocessing_function)
 
             elif data_source == 'keras':
-                (x_train, y_train) = get_keras_data(keras_dataset, 
-                                                    preprocess_keras, 
-                                                    num_samples)
+                (x_train, y_train) = get_keras_data(keras_dataset=keras_dataset, 
+                                                    preprocess=preprocess, 
+                                                    num_samples=num_samples)
 
             elif data_source == 'custom':
                 if callable(get_custom_data):
