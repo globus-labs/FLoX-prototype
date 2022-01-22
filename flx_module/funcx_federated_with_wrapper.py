@@ -239,7 +239,14 @@ def train_default_model(json_model_config,
 
     # compile the model and set weights to the global model
     model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-    model.set_weights(global_model_weights)
+
+    # this is a temporary fix for a bug on the testing side
+    # where it says I need to build the model first
+    try:
+        model.set_weights(global_model_weights)
+    except:
+        model.fit(x_train, y_train, epochs=1)
+        model.set_weights(global_model_weights)
 
     # train the model on the local data and extract the weights
     model.fit(x_train, y_train, epochs=epochs)
@@ -256,7 +263,7 @@ def create_training_function(train_model=train_default_model,
                             path_dir='/home/pi/datasets', 
                             x_train_name="mnist_x_train.npy", 
                             y_train_name="mnist_y_train.npy", 
-                            preprocess=True, 
+                            preprocess=False, 
                             preprocessing_function=None,
                             keras_dataset = "mnist", 
                             loss="categorical_crossentropy",
@@ -336,7 +343,7 @@ def create_training_function(train_model=train_default_model,
         Parameters
         ----------
         json_model_config: str
-        configuration of the TF model retrieved using model.to_json()
+            configuration of the TF model retrieved using model.to_json()
 
         global_model_weights: numpy array
             a numpy array with weights of the TF model
@@ -745,7 +752,7 @@ def create_inference_function(data_source: str = "keras",
 
             predictions = model.predict(x_train)
 
-            store_inference_results(predictions)
+            store_results(predictions)
 
             # wait for time_interval seconds 
             time.sleep(time_interval)

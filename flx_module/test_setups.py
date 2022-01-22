@@ -61,7 +61,7 @@ def preprocess_data(x_train, y_train, num_samples=100):
     return (x_train, y_train)
 
 x_test, y_test = get_test_data()
-endpoint_ids = ['00929e1a-ccc5-40be-8b04-c171f132f7b2', '11983ca1-2d45-40d1-b5a2-8736b3544dea']
+endpoint_ids = ['11983ca1-2d45-40d1-b5a2-8736b3544dea', '11983ca1-2d45-40d1-b5a2-8736b3544dea']
 batch_size = 128
 epochs = 5
 input_shape = (28, 28, 1)
