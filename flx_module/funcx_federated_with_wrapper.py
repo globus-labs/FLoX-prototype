@@ -46,6 +46,7 @@ def federated_decorator(func):
         # for each endpoint, submit the function with **kwargs to it
         for e in kwargs["endpoint_ids"]:
             tasks.append(fx.submit(func, 
+                                   *args,
                                    **kwargs,
                                     endpoint_id=e))
         return tasks
@@ -515,6 +516,88 @@ def federated_average(global_model,
 
     return global_model
 
+def store_inference_results(probs, path_dir='/home/pi/globus', filename='results.csv'):
+    """
+    Stores results of model.predict() in a csv file locally.
+
+    Parameters
+    ----------
+    probs: numpy array
+        output of model.predict()
+
+    path_dir: str
+        path to the directory of the CSV filename (where to store the file)
+
+    filename: str
+        name of the CSV file
+
+    Notes
+    -----
+    The function stores this information about the given array:
+    
+    - timestamp: timestamp of when the information was added to the file. 
+        this can be used to track when the inference was made
+
+    - value_counts: number of appearances of each class
+    
+    """
+    from datetime import datetime
+    import csv
+    import os
+
+    # get the path
+    results_file = os.sep.join([path_dir, filename])
+
+    # extract the likeliest class based on the probability vector
+    predictions = np.argmax(probs, axis=1)
+
+    # count the occurances of classes
+    unique, counts = np.unique(predictions, return_counts=True)
+    unique = unique.tolist()
+    counts = counts.tolist()
+
+    pred_counts = dict(zip(unique, counts))
+
+    # get the timestamp
+    timestamp = datetime.now()
+    date_time = timestamp.strftime("%m/%d/%Y, %H:%M:%S")
+
+    # add the information to the csv file
+    with open(results_file, 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([date_time, pred_counts])
+
+def retrieve_inference_results(path_dir='/home/pi/globus', filename='results.csv', **kwargs):
+    """
+    Returns information stored in the csv file as a list of rows
+
+    Parameters
+    ----------
+    path_dir: str
+        path to the directory of the CSV filename (where to store the file)
+
+    filename: str
+        name of the CSV file
+
+    Returns
+    -------
+    rows: list
+        a list of rows from the CSV file
+
+    """
+    import os
+    import csv
+    
+    # construct the path
+    results_file = os.sep.join([path_dir, filename])
+    
+    rows = []
+    with open(results_file, 'r') as f:
+        reader = csv.reader(f, delimiter='|')
+        for row in reader:
+            rows.append(row)
+        
+    return rows
 
 def create_inference_function(data_source: str = "keras",
                             path_dir='/home/pi/datasets', 
@@ -529,6 +612,7 @@ def create_inference_function(data_source: str = "keras",
                             get_keras_data=get_keras_data,
                             get_local_data=get_local_data,
                             get_custom_data=None,
+                            store_results=store_inference_results,
                             **kwargs
 ):
     """
@@ -661,6 +745,8 @@ def create_inference_function(data_source: str = "keras",
 
             predictions = model.predict(x_train)
 
+            store_inference_results(predictions)
+
             # wait for time_interval seconds 
             time.sleep(time_interval)
 
@@ -669,3 +755,5 @@ def create_inference_function(data_source: str = "keras",
         return "The inference process is over"
     
     return inference_function
+
+

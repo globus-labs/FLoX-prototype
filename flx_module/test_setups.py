@@ -17,6 +17,19 @@ def get_test_data(num_samples=1000):
     y_test = keras.utils.to_categorical(y_test, num_classes)
     return (x_test, y_test)
 
+def get_train_data(num_samples=1000):
+    num_classes = 10
+    (x_train, y_train), _= keras.datasets.fashion_mnist.load_data()
+    
+    idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+    x_train = x_train[idx]
+    y_train = y_train[idx]
+    
+    x_train = x_train.astype("float32") / 255
+    x_train = np.expand_dims(x_train, -1)
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+    return (x_train, y_train)
+
 def eval_model(m, x, y):
     ''' evaluate model on dataset x,y'''
     score = m.evaluate(x, y, verbose=0)
