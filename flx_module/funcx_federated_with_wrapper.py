@@ -1,4 +1,3 @@
-# conda activate py37
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -245,7 +244,7 @@ def train_default_model(json_model_config,
     try:
         model.set_weights(global_model_weights)
     except:
-        model.fit(x_train, y_train, epochs=1)
+        model.build(input_shape=(32, 28, 28, 1))
         model.set_weights(global_model_weights)
 
     # train the model on the local data and extract the weights
@@ -551,6 +550,7 @@ def store_inference_results(probs, path_dir='/home/pi/globus', filename='results
     from datetime import datetime
     import csv
     import os
+    import numpy as np
 
     # get the path
     results_file = os.sep.join([path_dir, filename])
@@ -571,7 +571,7 @@ def store_inference_results(probs, path_dir='/home/pi/globus', filename='results
 
     # add the information to the csv file
     with open(results_file, 'a', newline='') as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, delimiter='|')
         writer.writerow([date_time, pred_counts])
 
 def retrieve_inference_results(path_dir='/home/pi/globus', filename='results.csv', **kwargs):
@@ -620,6 +620,8 @@ def create_inference_function(data_source: str = "keras",
                             get_local_data=get_local_data,
                             get_custom_data=None,
                             store_results=store_inference_results,
+                            store_results_path='/home/pi/globus', 
+                            filename='results.csv',
                             **kwargs
 ):
     """
@@ -724,7 +726,14 @@ def create_inference_function(data_source: str = "keras",
 
         # compile the model and set weights to the global model
         model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-        model.set_weights(global_model_weights)
+
+        try:
+            model.set_weights(global_model_weights)
+        except:
+            model.build(input_shape=(32, 28, 28, 1))
+            model.set_weights(global_model_weights)
+
+        #model.set_weights(global_model_weights)
 
         for i in range(loops):
         # train the model on the local data and extract the weights
@@ -752,7 +761,7 @@ def create_inference_function(data_source: str = "keras",
 
             predictions = model.predict(x_train)
 
-            store_results(predictions)
+            store_results(probs=predictions, path_dir=store_results_path, filename=filename)
 
             # wait for time_interval seconds 
             time.sleep(time_interval)

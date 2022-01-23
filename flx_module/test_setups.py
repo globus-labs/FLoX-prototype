@@ -4,9 +4,18 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 
-def get_test_data(num_samples=1000):
+def get_test_data(dataset='mnist', num_samples=1000):
+    dataset_mapping= {
+        'mnist': keras.datasets.mnist,
+        'fashion_mnist': keras.datasets.fashion_mnist,
+        'cifar10': keras.datasets.cifar10,
+        'cifar100': keras.datasets.cifar100,
+        'imdb': keras.datasets.imdb,
+        'reuters': keras.datasets.reuters,
+        'boston_housing': keras.datasets.boston_housing
+    }
     num_classes = 10
-    _, (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
+    _, (x_test, y_test) = dataset_mapping[dataset].load_data()
     
     idx = np.random.choice(np.arange(len(x_test)), num_samples, replace=True)
     x_test = x_test[idx]
@@ -17,9 +26,19 @@ def get_test_data(num_samples=1000):
     y_test = keras.utils.to_categorical(y_test, num_classes)
     return (x_test, y_test)
 
-def get_train_data(num_samples=1000):
+def get_train_data(dataset='mnist', num_samples=1000):
+    dataset_mapping= {
+        'mnist': keras.datasets.mnist,
+        'fashion_mnist': keras.datasets.fashion_mnist,
+        'cifar10': keras.datasets.cifar10,
+        'cifar100': keras.datasets.cifar100,
+        'imdb': keras.datasets.imdb,
+        'reuters': keras.datasets.reuters,
+        'boston_housing': keras.datasets.boston_housing
+    }
+
     num_classes = 10
-    (x_train, y_train), _= keras.datasets.fashion_mnist.load_data()
+    (x_train, y_train), _= dataset_mapping[dataset].load_data()
     
     idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
     x_train = x_train[idx]
