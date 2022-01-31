@@ -466,8 +466,6 @@ def federated_learning(global_model,
                       y_test=None,
                       **kwargs):
     """
-    TODO: seems like this function is redundant and can be replaced with a sequence
-    of a few lower-level functions.
 
     Parameters
     ----------
