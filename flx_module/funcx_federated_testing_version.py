@@ -248,6 +248,7 @@ def train_default_model(json_model_config,
     try:
         model.set_weights(global_model_weights)
     except:
+        # change the INPUT SHAPE! make it dynamic
         model.build(input_shape=(32, 28, 28, 1))
         model.set_weights(global_model_weights)
 
@@ -368,7 +369,7 @@ def create_training_function(train_model=train_default_model,
 
         """
         from timeit import default_timer as timer
-        start = timer()
+        task_start = timer()
         # import all the dependencies required for funcX functions)
         import numpy as np
 
@@ -397,6 +398,7 @@ def create_training_function(train_model=train_default_model,
             raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
 
         # train the model
+        training_start = timer()
         model_weights = train_model(json_model_config=json_model_config, 
                                             global_model_weights=global_model_weights, 
                                             x_train=x_train, 
@@ -405,10 +407,11 @@ def create_training_function(train_model=train_default_model,
                                             loss=loss,
                                             optimizer=optimizer, 
                                             metrics=metrics)
-        
-        end = timer() - start
+
+        training_runtime = timer() - training_start
+        task_runtime = timer() - task_start
         # return the updated weights and number of samples the model was trained on
-        return {"model_weights":model_weights, "samples_count": x_train.shape[0], 'runtime':end}
+        return {"model_weights":model_weights, "samples_count": x_train.shape[0], 'task_runtime':task_runtime, 'training_runtime': training_runtime}
     
     return training_function
 
@@ -430,11 +433,12 @@ def get_edge_weights(sample_counts):
     fractions = sample_counts/total
     return fractions
 
-def eval_model(m, x, y):
+def eval_model(m, x, y, silent=False):
     ''' evaluate model on dataset x,y'''
     score = m.evaluate(x, y, verbose=0)
-    print("Test loss:", score[0])
-    print("Test accuracy:", score[1])
+    if not silent:
+        print("Test loss:", score[0])
+        print("Test accuracy:", score[1])
 
     return score[0], score[1]
 
@@ -473,6 +477,7 @@ def federated_learning(global_model,
                       y_test=None,
                       csv_path='/content/drive/MyDrive/flx/evaluation/experiments.csv',
                       experiment='default',
+                      client_names="RPi4-8gb, RPi4-4gb",
                       **kwargs):
     """
     TODO: seems like this function is redundant and can be replaced with a sequence
@@ -524,9 +529,6 @@ def federated_learning(global_model,
         # extract weights from each edge model
         model_weights = [t.result()["model_weights"] for t in tasks]
         tasks_sending_runtime = timer() - tasks_start
-        endpoint_runtimes = [t.result()["runtime"] for t in tasks]
-        average_task_runtime = np.mean(endpoint_runtimes, axis=0)
-        edgepoint_runtimes_string = ', '.joing(endpoint_runtimes)
 
         if federated_mode == "average":
             average_weights = np.mean(model_weights, axis=0)
@@ -555,19 +557,57 @@ def federated_learning(global_model,
 
         round_runtime = timer() - round_start
 
-        header = ['experiment', 'round', 'epochs', 'num_samples', 'dataset', 'n_clients', 'accuracy', 'loss', 'round_runtime', 'task_and_sending_runtime', 'average_task_runtime', 'endpoint_runtimes']
+
+        endpoint_task_runtimes = [t.result()["task_runtime"] for t in tasks]
+        average_task_runtime = np.mean(endpoint_task_runtimes, axis=0)
+        endpoint_task_runtimes = [round(i, 3) for i in endpoint_task_runtimes]
+
+        endpoint_training_runtimes = [t.result()["training_runtime"] for t in tasks]
+        average_training_runtime = np.mean(endpoint_training_runtimes, axis=0)
+        endpoint_training_runtimes = [round(i, 3) for i in endpoint_training_runtimes]
+        
+        communication_time = tasks_sending_runtime - max(endpoint_task_runtimes)
+
+        endpoint_losses = []
+        endpoint_accuracies = []
+
+        for m_weight in model_weights:
+            m = keras.models.model_from_json(json_config)
+            m.compile(loss=loss, optimizer=optimizer, metrics=metrics)    
+            try:
+                m.set_weights(m_weight)
+            except:
+                m.build(input_shape=(32, 28, 28, 1))
+                m.set_weights(m_weight)
+
+            e_loss, e_accuracy = evaluation_function(m, x_test, y_test, silent=True)
+            endpoint_losses.append(round(e_loss, 3))
+            endpoint_accuracies.append(round(e_accuracy, 3))
+
+        header = ['experiment', 'round', 'epochs', 'num_samples', 'dataset', 'n_clients',
+         'accuracy', 'endpoint_accuracies', 'loss', 'endpoint_losses', 'round_runtime',
+          'task_and_sending_runtime', 'average_task_runtime',  'endpoint_task_runtimes',
+           'communication_time', 'average_training_runtime', 'endpoint_training_runtimes',
+            'client_names']
+
         csv_entry = {'experiment':experiment, 
                     'round':i, 
                     'epochs':epochs, 
                     'num_samples':num_samples, 
                     'dataset':keras_dataset, 
                     'n_clients':len(endpoint_ids), 
-                    'accuracy':accuracy, 
-                    'loss':loss_eval, 
+                    'accuracy':accuracy,
+                    'endpoint_accuracies': endpoint_accuracies, 
+                    'loss':loss_eval,
+                    'endpoint_losses': endpoint_losses, 
                     'round_runtime':round_runtime, 
                     'task_and_sending_runtime':tasks_sending_runtime,
                     'average_task_runtime': average_task_runtime,
-                    'endpoint_runtimes': edgepoint_runtimes_string}
+                    'endpoint_task_runtimes': endpoint_task_runtimes,
+                    'communication_time': communication_time,
+                    'average_training_runtime': average_training_runtime,
+                    'endpoint_training_runtimes': endpoint_training_runtimes,
+                    'client_names':client_names}
 
         with open(csv_path, 'a', encoding='UTF8', newline='') as f:
             writer = csv.DictWriter(f, header)
