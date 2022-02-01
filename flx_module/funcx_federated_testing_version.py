@@ -112,7 +112,7 @@ def get_local_data(x_train_name, y_train_name, path_dir=".", preprocess=False, p
     return (x_train, y_train)
 
 
-def get_keras_data(keras_dataset='mnist', num_samples=None, preprocess=True, preprocessing_function=None):
+def get_keras_data(keras_dataset='mnist', num_samples=None, preprocess=True, preprocessing_function=None, **kwargs):
     """
     Returns (x_train, y_train) of a chosen built-in Keras dataset. 
     Also preprocesses the image datasets (mnist, fashion_mnist, cifar10, cifar100) by default.
@@ -195,6 +195,7 @@ def train_default_model(json_model_config,
                 x_train,
                 y_train,
                 epochs=10,
+                input_shape=(32, 28, 28, 1),
                 loss="categorical_crossentropy",
                 optimizer="adam", 
                 metrics=["accuracy"]):
@@ -249,7 +250,7 @@ def train_default_model(json_model_config,
         model.set_weights(global_model_weights)
     except:
         # change the INPUT SHAPE! make it dynamic
-        model.build(input_shape=(32, 28, 28, 1))
+        model.build(input_shape=input_shape)
         model.set_weights(global_model_weights)
 
     # train the model on the local data and extract the weights
@@ -270,6 +271,7 @@ def create_training_function(train_model=train_default_model,
                             preprocess=False, 
                             preprocessing_function=None,
                             keras_dataset = "mnist", 
+                            input_shape=(32, 28, 28, 1),
                             loss="categorical_crossentropy",
                             optimizer="adam", 
                             metrics=["accuracy"],
@@ -404,6 +406,7 @@ def create_training_function(train_model=train_default_model,
                                             x_train=x_train, 
                                             y_train=y_train,
                                             epochs=epochs,
+                                            input_shape=input_shape,
                                             loss=loss,
                                             optimizer=optimizer, 
                                             metrics=metrics)
@@ -467,7 +470,8 @@ def federated_learning(global_model,
                       y_train_name="mnist_y_train.npy", 
                       preprocess=False, 
                       preprocessing_function=None,
-                      keras_dataset = "mnist",  
+                      keras_dataset = "mnist",
+                      input_shape=(32, 28, 28, 1),  
                       loss="categorical_crossentropy",
                       optimizer="adam", 
                       metrics=["accuracy"],
@@ -477,6 +481,7 @@ def federated_learning(global_model,
                       y_test=None,
                       csv_path='/content/drive/MyDrive/flx/evaluation/experiments.csv',
                       experiment='default',
+                      description='default',
                       client_names="RPi4-8gb, RPi4-4gb",
                       **kwargs):
     """
@@ -503,7 +508,8 @@ def federated_learning(global_model,
                                                 y_train_name=y_train_name, 
                                                 preprocess=preprocess, 
                                                 preprocessing_function=preprocessing_function,
-                                                keras_dataset = keras_dataset, 
+                                                keras_dataset = keras_dataset,
+                                                input_shape=input_shape, 
                                                 loss=loss,
                                                 optimizer=optimizer, 
                                                 metrics=metrics,
@@ -584,13 +590,14 @@ def federated_learning(global_model,
             endpoint_losses.append(round(e_loss, 3))
             endpoint_accuracies.append(round(e_accuracy, 3))
 
-        header = ['experiment', 'round', 'epochs', 'num_samples', 'dataset', 'n_clients',
+        header = ['experiment', 'description', 'round', 'epochs', 'num_samples', 'dataset', 'n_clients',
          'accuracy', 'endpoint_accuracies', 'loss', 'endpoint_losses', 'round_runtime',
           'task_and_sending_runtime', 'average_task_runtime',  'endpoint_task_runtimes',
            'communication_time', 'average_training_runtime', 'endpoint_training_runtimes',
             'client_names']
 
-        csv_entry = {'experiment':experiment, 
+        csv_entry = {'experiment':experiment,
+                    'description':description,
                     'round':i, 
                     'epochs':epochs, 
                     'num_samples':num_samples, 
@@ -865,4 +872,84 @@ def create_inference_function(data_source: str = "keras",
     
     return inference_function
 
+def get_keras_data_timed(keras_dataset='mnist', num_samples=None, preprocess=True, preprocessing_function=None, **kwargs):
+    """
+    Returns (x_train, y_train) of a chosen built-in Keras dataset. 
+    Also preprocesses the image datasets (mnist, fashion_mnist, cifar10, cifar100) by default.
 
+    Parameters
+    ----------
+    keras_dataset: str
+        one of the available Keras datasets: 
+        ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+
+    num_samples: int 
+        randomly samples n data points from (x_train, y_train). Set to None by default.
+
+    preprocess: boolean
+        if True, preprocesses (x_train, y_train) 
+
+    preprocessing_function: function
+        a custom user-provided function that processes (x_train, y_train) and outputs 
+        a tuple (x_train, y_train)
+
+    Returns
+    -------
+
+    
+    """
+    from timeit import default_timer as timer
+    task_start = timer()
+    from tensorflow import keras
+    import numpy as np
+
+    available_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+    dataset_mapping= {
+        'mnist': keras.datasets.mnist,
+        'fashion_mnist': keras.datasets.fashion_mnist,
+        'cifar10': keras.datasets.cifar10,
+        'cifar100': keras.datasets.cifar100,
+        'imdb': keras.datasets.imdb,
+        'reuters': keras.datasets.reuters,
+        'boston_housing': keras.datasets.boston_housing
+    }
+    image_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
+
+    # check if the dataset exists
+    if keras_dataset not in available_datasets:
+        raise Exception(f"Please select one of the built-in Keras datasets: {available_datasets}")
+
+    else:
+        (x_train, y_train), _ = dataset_mapping[keras_dataset].load_data()
+
+        # take a random set of images
+        if num_samples:
+            idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+            x_train = x_train[idx]
+            y_train = y_train[idx]
+
+        if preprocess:
+            if preprocessing_function and callable(preprocessing_function):
+                (x_train, y_train) = preprocessing_function(x_train, y_train)
+
+            else:
+                # do default image processing for built-in Keras images    
+                if keras_dataset in image_datasets:
+                    # Scale images to the [0, 1] range
+                    x_train = x_train.astype("float32") / 255
+
+                    # Make sure images have shape (num_samples, x, y, 1) if working with MNIST images
+                    if x_train.shape[-1] not in [1, 3]:
+                        x_train = np.expand_dims(x_train, -1)
+
+                    # convert class vectors to binary class matrices
+                    if keras_dataset == 'cifar100':
+                        num_classes=100
+                    else:
+                        num_classes=10
+                        
+                    y_train = keras.utils.to_categorical(y_train, num_classes)
+
+        task_time = timer() - task_start
+
+        return {'dataset':(x_train, y_train), 'runtime': task_time}

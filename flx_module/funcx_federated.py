@@ -193,6 +193,7 @@ def train_default_model(json_model_config,
                 x_train,
                 y_train,
                 epochs=10,
+                input_shape=(32, 28, 28, 1),
                 loss="categorical_crossentropy",
                 optimizer="adam", 
                 metrics=["accuracy"]):
@@ -246,7 +247,7 @@ def train_default_model(json_model_config,
     try:
         model.set_weights(global_model_weights)
     except:
-        model.build(input_shape=(32, 28, 28, 1))
+        model.build(input_shape=input_shape)
         model.set_weights(global_model_weights)
 
     # train the model on the local data and extract the weights
@@ -267,6 +268,7 @@ def create_training_function(train_model=train_default_model,
                             preprocess=False, 
                             preprocessing_function=None,
                             keras_dataset = "mnist", 
+                            input_shape=(32, 28, 28, 1),
                             loss="categorical_crossentropy",
                             optimizer="adam", 
                             metrics=["accuracy"],
@@ -398,6 +400,7 @@ def create_training_function(train_model=train_default_model,
                                             x_train=x_train, 
                                             y_train=y_train,
                                             epochs=epochs,
+                                            input_shape=input_shape,
                                             loss=loss,
                                             optimizer=optimizer, 
                                             metrics=metrics)
@@ -457,6 +460,7 @@ def federated_learning(global_model,
                       preprocess=False, 
                       preprocessing_function=None,
                       keras_dataset = "mnist",  
+                      input_shape=(32, 28, 28, 1),
                       loss="categorical_crossentropy",
                       optimizer="adam", 
                       metrics=["accuracy"],
@@ -488,6 +492,7 @@ def federated_learning(global_model,
                                                 preprocess=preprocess, 
                                                 preprocessing_function=preprocessing_function,
                                                 keras_dataset = keras_dataset, 
+                                                input_shape=input_shape,
                                                 loss=loss,
                                                 optimizer=optimizer, 
                                                 metrics=metrics,
