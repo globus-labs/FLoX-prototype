@@ -4,7 +4,35 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 
-def get_test_data(dataset='mnist', num_samples=1000):
+def get_test_data(keras_dataset='mnist', num_samples=None, preprocess=True, preprocessing_function=None, **kwargs):
+    """
+    Returns (x_test, y_test) of a chosen built-in Keras dataset. 
+    Also preprocesses the image datasets (mnist, fashion_mnist, cifar10, cifar100) by default.
+
+    Parameters
+    ----------
+    keras_dataset: str
+        one of the available Keras datasets: 
+        ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+
+    num_samples: int 
+        randomly samples n data points from (x_test, y_test). Set to None by default.
+
+    preprocess: boolean
+        if True, preprocesses (x_test, y_test) 
+
+    preprocessing_function: function
+        a custom user-provided function that processes (x_test, y_test) and outputs 
+        a tuple (x_test, y_test)
+
+    Returns
+    -------
+
+    """
+    from tensorflow import keras
+    import numpy as np
+
+    available_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
     dataset_mapping= {
         'mnist': keras.datasets.mnist,
         'fashion_mnist': keras.datasets.fashion_mnist,
@@ -14,17 +42,45 @@ def get_test_data(dataset='mnist', num_samples=1000):
         'reuters': keras.datasets.reuters,
         'boston_housing': keras.datasets.boston_housing
     }
-    num_classes = 10
-    _, (x_test, y_test) = dataset_mapping[dataset].load_data()
-    
-    idx = np.random.choice(np.arange(len(x_test)), num_samples, replace=True)
-    x_test = x_test[idx]
-    y_test = y_test[idx]
-    
-    x_test = x_test.astype("float32") / 255
-    x_test = np.expand_dims(x_test, -1)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
-    return (x_test, y_test)
+    image_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
+
+    # check if the dataset exists
+    if keras_dataset not in available_datasets:
+        raise Exception(f"Please select one of the built-in Keras datasets: {available_datasets}")
+
+    else:
+        _, (x_test, y_test) = dataset_mapping[keras_dataset].load_data()
+
+        # take a random set of images
+        if num_samples:
+            idx = np.random.choice(np.arange(len(x_test)), num_samples, replace=True)
+            x_test = x_test[idx]
+            y_test = y_test[idx]
+
+        if preprocess:
+            if preprocessing_function and callable(preprocessing_function):
+                (x_test, y_test) = preprocessing_function(x_test, y_test)
+
+            else:
+                # do default image processing for built-in Keras images    
+                if keras_dataset in image_datasets:
+                    # Scale images to the [0, 1] range
+                    x_test = x_test.astype("float32") / 255
+
+                    # Make sure images have shape (num_samples, x, y, 1) if working with MNIST images
+                    if x_test.shape[-1] not in [1, 3]:
+                        x_test = np.expand_dims(x_test, -1)
+
+                    # convert class vectors to binary class matrices
+                    if keras_dataset == 'cifar100':
+                        num_classes=100
+                    else:
+                        num_classes=10
+                        
+                    y_test = keras.utils.to_categorical(y_test, num_classes)
+
+        return (x_test, y_test)
+
 
 def get_train_data(dataset='mnist', num_samples=1000):
     dataset_mapping= {
@@ -38,16 +94,16 @@ def get_train_data(dataset='mnist', num_samples=1000):
     }
 
     num_classes = 10
-    (x_train, y_train), _= dataset_mapping[dataset].load_data()
+    (x_test, y_test), _= dataset_mapping[dataset].load_data()
     
-    idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
-    x_train = x_train[idx]
-    y_train = y_train[idx]
+    idx = np.random.choice(np.arange(len(x_test)), num_samples, replace=True)
+    x_test = x_test[idx]
+    y_test = y_test[idx]
     
-    x_train = x_train.astype("float32") / 255
-    x_train = np.expand_dims(x_train, -1)
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    return (x_train, y_train)
+    x_test = x_test.astype("float32") / 255
+    x_test = np.expand_dims(x_test, -1)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
+    return (x_test, y_test)
 
 def eval_model(m, x, y):
     ''' evaluate model on dataset x,y'''
@@ -55,29 +111,29 @@ def eval_model(m, x, y):
     print("Test loss:", score[0])
     print("Test accuracy:", score[1])
 
-def preprocess_data(x_train, y_train, num_samples=100):
+def preprocess_data(x_test, y_test, num_samples=100):
     from tensorflow import keras
     import numpy as np
 
     num_classes = 10
 
     # take a random set of images
-    idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
-    x_train = x_train[idx]
-    y_train = y_train[idx]
+    idx = np.random.choice(np.arange(len(x_test)), num_samples, replace=True)
+    x_test = x_test[idx]
+    y_test = y_test[idx]
 
     # Scale images to the [0, 1] range
-    x_train = x_train.astype("float32") / 255
+    x_test = x_test.astype("float32") / 255
 
     # Make sure images have shape (28, 28, 1)
-    x_train = np.expand_dims(x_train, -1)
-    print("x_train shape:", x_train.shape)
-    print(x_train.shape[0], "train samples")
+    x_test = np.expand_dims(x_test, -1)
+    print("x_test shape:", x_test.shape)
+    print(x_test.shape[0], "train samples")
 
     # convert class vectors to binary class matrices
-    y_train = keras.utils.to_categorical(y_train, num_classes)
+    y_test = keras.utils.to_categorical(y_test, num_classes)
 
-    return (x_train, y_train)
+    return (x_test, y_test)
 
 x_test, y_test = get_test_data()
 endpoint_ids = ['11983ca1-2d45-40d1-b5a2-8736b3544dea', '11983ca1-2d45-40d1-b5a2-8736b3544dea']

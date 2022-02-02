@@ -482,6 +482,7 @@ def federated_learning(global_model,
                       csv_path='/content/drive/MyDrive/flx/evaluation/experiments.csv',
                       experiment='default',
                       description='default',
+                      dataset_name="mnist",
                       client_names="RPi4-8gb, RPi4-4gb",
                       **kwargs):
     """
@@ -583,12 +584,15 @@ def federated_learning(global_model,
             try:
                 m.set_weights(m_weight)
             except:
-                m.build(input_shape=(32, 28, 28, 1))
+                m.build(input_shape=input_shape)
                 m.set_weights(m_weight)
 
             e_loss, e_accuracy = evaluation_function(m, x_test, y_test, silent=True)
             endpoint_losses.append(round(e_loss, 3))
             endpoint_accuracies.append(round(e_accuracy, 3))
+
+        if data_source == "keras":
+            dataset_name = keras_dataset
 
         header = ['experiment', 'description', 'round', 'epochs', 'num_samples', 'dataset', 'n_clients',
          'accuracy', 'endpoint_accuracies', 'loss', 'endpoint_losses', 'round_runtime',
@@ -601,7 +605,7 @@ def federated_learning(global_model,
                     'round':i, 
                     'epochs':epochs, 
                     'num_samples':num_samples, 
-                    'dataset':keras_dataset, 
+                    'dataset':dataset_name, 
                     'n_clients':len(endpoint_ids), 
                     'accuracy':accuracy,
                     'endpoint_accuracies': endpoint_accuracies, 

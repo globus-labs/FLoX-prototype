@@ -751,7 +751,7 @@ def create_inference_function(data_source: str = "keras",
         try:
             model.set_weights(global_model_weights)
         except:
-            model.build(input_shape=(32, 28, 28, 1))
+            model.build(input_shape=input_shape)
             model.set_weights(global_model_weights)
 
         #model.set_weights(global_model_weights)
