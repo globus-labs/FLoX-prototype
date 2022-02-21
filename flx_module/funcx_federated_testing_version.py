@@ -575,6 +575,8 @@ def federated_learning(global_model,
         
         communication_time = tasks_sending_runtime - max(endpoint_task_runtimes)
 
+        model_size = sum(w.size for w in gm_weights_np) * gm_weights_np.itemsize
+
         endpoint_losses = []
         endpoint_accuracies = []
 
@@ -598,7 +600,7 @@ def federated_learning(global_model,
          'accuracy', 'endpoint_accuracies', 'loss', 'endpoint_losses', 'round_runtime',
           'task_and_sending_runtime', 'average_task_runtime',  'endpoint_task_runtimes',
            'communication_time', 'average_training_runtime', 'endpoint_training_runtimes',
-            'client_names']
+            'client_names', 'files_size']
 
         csv_entry = {'experiment':experiment,
                     'description':description,
@@ -618,7 +620,8 @@ def federated_learning(global_model,
                     'communication_time': communication_time,
                     'average_training_runtime': average_training_runtime,
                     'endpoint_training_runtimes': endpoint_training_runtimes,
-                    'client_names':client_names}
+                    'client_names':client_names,
+                    'files_size':model_size}
 
         with open(csv_path, 'a', encoding='UTF8', newline='') as f:
             writer = csv.DictWriter(f, header)
