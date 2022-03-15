@@ -260,22 +260,13 @@ def train_default_model(json_model_config,
     return np_model_weights
 
 
-def create_training_function(train_model=train_default_model, 
-                            data_source: str = "keras",
-                            path_dir='/home/pi/datasets', 
-                            x_train_name="mnist_x_train.npy", 
-                            y_train_name="mnist_y_train.npy", 
-                            preprocess=False, 
-                            preprocessing_function=None,
+def create_training_function(data_source: str = "keras",
+                            preprocess=False,
                             keras_dataset = "mnist", 
                             input_shape=(32, 28, 28, 1),
                             loss="categorical_crossentropy",
                             optimizer="adam", 
-                            metrics=["accuracy"],
-                            get_keras_data=get_keras_data,
-                            get_local_data=get_local_data,
-                            get_custom_data=None,
-                            **kwargs
+                            metrics=["accuracy"]
 ):
     """
     Creates a function for loading data and training a model
@@ -338,8 +329,7 @@ def create_training_function(train_model=train_default_model,
     def training_function(json_model_config, 
                           global_model_weights, 
                           num_samples=None,
-                          epochs=10,
-                          **kwargs
+                          epochs=10
 ):
         """
 
@@ -368,45 +358,82 @@ def create_training_function(train_model=train_default_model,
 
         """
         # import all the dependencies required for funcX functions)
+        from tensorflow import keras
         import numpy as np
 
         # retrieve (and optionally process) the data
-        if data_source == 'local':
-            (x_train, y_train) = get_local_data(path_dir=path_dir, 
-                          x_train_name=x_train_name, 
-                          y_train_name=y_train_name, 
-                          preprocess=preprocess, 
-                          preprocessing_function=preprocessing_function)
+        if data_source == 'keras':
+            available_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+            dataset_mapping= {
+                'mnist': keras.datasets.mnist,
+                'fashion_mnist': keras.datasets.fashion_mnist,
+                'cifar10': keras.datasets.cifar10,
+                'cifar100': keras.datasets.cifar100,
+                'imdb': keras.datasets.imdb,
+                'reuters': keras.datasets.reuters,
+                'boston_housing': keras.datasets.boston_housing
+            }
+            image_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
 
-        elif data_source == 'keras':
-            (x_train, y_train) = get_keras_data(keras_dataset=keras_dataset, 
-                                                preprocess=preprocess, 
-                                                num_samples=num_samples,
-                                                preprocessing_function=preprocessing_function)
+            # check if the dataset exists
+            if keras_dataset not in available_datasets:
+                raise Exception(f"Please select one of the built-in Keras datasets: {available_datasets}")
 
-        elif data_source == 'custom':
-            if callable(get_custom_data):
-                (x_train, y_train) = get_custom_data()
             else:
-                raise TypeError('preprocessing_function is not a function. \
-                                 Please provide a valid function in your call')
+                (x_train, y_train), _ = dataset_mapping[keras_dataset].load_data()
+
+                # take a random set of images
+                if num_samples:
+                    idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+                    x_train = x_train[idx]
+                    y_train = y_train[idx]
+
+                if preprocess:
+                    # do default image processing for built-in Keras images    
+                    if keras_dataset in image_datasets:
+                        # Scale images to the [0, 1] range
+                        x_train = x_train.astype("float32") / 255
+
+                        # Make sure images have shape (num_samples, x, y, 1) if working with MNIST images
+                        if x_train.shape[-1] not in [1, 3]:
+                            x_train = np.expand_dims(x_train, -1)
+
+                        # convert class vectors to binary class matrices
+                        if keras_dataset == 'cifar100':
+                            num_classes=100
+                        else:
+                            num_classes=10
+                            
+                        y_train = keras.utils.to_categorical(y_train, num_classes)
 
         else:
             raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
 
         # train the model
-        model_weights = train_model(json_model_config=json_model_config, 
-                                            global_model_weights=global_model_weights, 
-                                            x_train=x_train, 
-                                            y_train=y_train,
-                                            epochs=epochs,
-                                            input_shape=input_shape,
-                                            loss=loss,
-                                            optimizer=optimizer, 
-                                            metrics=metrics)
+        # create the model
+        model = keras.models.model_from_json(json_model_config)
+
+        # compile the model and set weights to the global model
+        model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+
+        #global_model_weights = np.asarray(global_model_weights, dtype=object)
+        # this is a temporary fix for a bug on the testing side
+        # where it says I need to build the model first   
+        try:
+            model.set_weights(global_model_weights)
+        except:
+            model.build(input_shape=input_shape)
+            model.set_weights(global_model_weights)
+
+        # train the model on the local data and extract the weights
+        model.fit(x_train, y_train, epochs=epochs)
+        model_weights = model.get_weights()
+
+        # transform to a numpy array
+        np_model_weights = np.asarray(model_weights, dtype=object)
 
         # return the updated weights and number of samples the model was trained on
-        return {"model_weights":model_weights, "samples_count": x_train.shape[0]}
+        return {"model_weights":np_model_weights, "samples_count": x_train.shape[0]}
     
     return training_function
 
@@ -445,6 +472,123 @@ def find_federated_average(model_weights, weighted=False, calculation_weights=No
 
     return average_weights
 
+def training_function(json_model_config, 
+                      global_model_weights, 
+                      num_samples=None,
+                      epochs=10
+):
+    """
+
+    Parameters
+    ----------
+    json_model_config: str
+        configuration of the TF model retrieved using model.to_json()
+
+    global_model_weights: numpy array
+        a numpy array with weights of the TF model
+
+    num_samples: int
+        if data_source="keras", randomly samples n data points from (x_train, y_train)
+
+    epochs: int
+        the number of epochs to train the model for
+
+    Returns
+    -------
+    model_weights: numpy array
+        updated TF model weights after training on the local data
+
+    samples_counts: int
+        the number of samples the model was trained on. 
+        Can be used to find the weighted average by # of samples seen
+
+    """
+    # import all the dependencies required for funcX functions)
+    from tensorflow import keras
+    import numpy as np
+
+    data_source="keras"
+    preprocess=True
+    keras_dataset = "mnist" 
+    input_shape=(32, 28, 28, 1)
+    loss="categorical_crossentropy"
+    optimizer="adam"
+    metrics=["accuracy"]
+
+    # retrieve (and optionally process) the data
+    if data_source == 'keras':
+        available_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+        dataset_mapping= {
+            'mnist': keras.datasets.mnist,
+            'fashion_mnist': keras.datasets.fashion_mnist,
+            'cifar10': keras.datasets.cifar10,
+            'cifar100': keras.datasets.cifar100,
+            'imdb': keras.datasets.imdb,
+            'reuters': keras.datasets.reuters,
+            'boston_housing': keras.datasets.boston_housing
+        }
+        image_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
+
+        # check if the dataset exists
+        if keras_dataset not in available_datasets:
+            raise Exception(f"Please select one of the built-in Keras datasets: {available_datasets}")
+
+        else:
+            (x_train, y_train), _ = dataset_mapping[keras_dataset].load_data()
+
+            # take a random set of images
+            if num_samples:
+                idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+                x_train = x_train[idx]
+                y_train = y_train[idx]
+
+            if preprocess:
+                # do default image processing for built-in Keras images    
+                if keras_dataset in image_datasets:
+                    # Scale images to the [0, 1] range
+                    x_train = x_train.astype("float32") / 255
+
+                    # Make sure images have shape (num_samples, x, y, 1) if working with MNIST images
+                    if x_train.shape[-1] not in [1, 3]:
+                        x_train = np.expand_dims(x_train, -1)
+
+                    # convert class vectors to binary class matrices
+                    if keras_dataset == 'cifar100':
+                        num_classes=100
+                    else:
+                        num_classes=10
+                        
+                    y_train = keras.utils.to_categorical(y_train, num_classes)
+
+    else:
+        raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
+
+    # train the model
+    # create the model
+    model = keras.models.model_from_json(json_model_config)
+
+    # compile the model and set weights to the global model
+    model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+
+    #global_model_weights = np.asarray(global_model_weights, dtype=object)
+    # this is a temporary fix for a bug on the testing side
+    # where it says I need to build the model first   
+    try:
+        model.set_weights(global_model_weights)
+    except:
+        model.build(input_shape=input_shape)
+        model.set_weights(global_model_weights)
+
+    # train the model on the local data and extract the weights
+    model.fit(x_train, y_train, epochs=epochs)
+    model_weights = model.get_weights()
+
+    # transform to a numpy array
+    np_model_weights = np.asarray(model_weights, dtype=object)
+
+    # return the updated weights and number of samples the model was trained on
+    return {"model_weights":np_model_weights, "samples_count": x_train.shape[0]}
+
 def federated_learning(global_model, 
                       endpoint_ids, 
                       num_samples=100,
@@ -452,23 +596,16 @@ def federated_learning(global_model,
                       loops=1,
                       time_interval=0,
                       federated_mode="average",
-                      train_model=train_default_model, 
                       data_source: str = "keras",
-                      path_dir='/home/pi/datasets', 
-                      x_train_name="mnist_x_train.npy", 
-                      y_train_name="mnist_y_train.npy", 
-                      preprocess=False, 
-                      preprocessing_function=None,
+                      preprocess=False,
                       keras_dataset = "mnist",  
                       input_shape=(32, 28, 28, 1),
                       loss="categorical_crossentropy",
                       optimizer="adam", 
                       metrics=["accuracy"],
-                      get_custom_data=None,
                       evaluation_function=eval_model,
                       x_test=None,
-                      y_test=None,
-                      **kwargs):
+                      y_test=None):
     """
 
     Parameters
@@ -484,21 +621,7 @@ def federated_learning(global_model,
     fx = FuncXExecutor(FuncXClient())
 
     # compile the training function
-    training_function = create_training_function(train_model=train_model, 
-                                                data_source = data_source,
-                                                path_dir=path_dir, 
-                                                x_train_name=x_train_name, 
-                                                y_train_name=y_train_name, 
-                                                preprocess=preprocess, 
-                                                preprocessing_function=preprocessing_function,
-                                                keras_dataset = keras_dataset, 
-                                                input_shape=input_shape,
-                                                loss=loss,
-                                                optimizer=optimizer, 
-                                                metrics=metrics,
-                                                get_custom_data=get_custom_data)
     
-    federated_training = federated_decorator(training_function)
     
     for i in range(loops):
         # get the model's architecture and weights
@@ -507,11 +630,17 @@ def federated_learning(global_model,
         gm_weights_np = np.asarray(gm_weights, dtype=object)
 
         # train the MNIST model on each of the endpoints and return the result, sending the global weights to each edge
-        tasks = federated_training(json_model_config=json_config, 
+        fx = FuncXExecutor(FuncXClient())
+        tasks = []
+
+        # for each endpoint, submit the function with **kwargs to it
+        for e in endpoint_ids:
+            tasks.append(fx.submit(training_function, 
+                                   json_model_config=json_config, 
                                     global_model_weights=gm_weights_np, 
                                     num_samples=num_samples,
                                     epochs=epochs,
-                                    endpoint_ids=endpoint_ids)
+                                    endpoint_id=e))
         
         # extract weights from each edge model
         model_weights = [t.result()["model_weights"] for t in tasks]
