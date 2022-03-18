@@ -35,7 +35,14 @@ def eval_model(m, x, y):
 def training_function(json_model_config, 
                       global_model_weights, 
                       num_samples=None,
-                      epochs=10
+                      epochs=10,     
+                      data_source="keras",
+                      preprocess=True,
+                      keras_dataset="mnist",
+                      input_shape=(32, 28, 28, 1),
+                      loss="categorical_crossentropy",
+                      optimizer="adam",
+                      metrics=["accuracy"]
 ):
     """
 
@@ -66,14 +73,6 @@ def training_function(json_model_config,
     # import all the dependencies required for funcX functions)
     from tensorflow import keras
     import numpy as np
-
-    data_source="keras"
-    preprocess=True
-    keras_dataset = "mnist" 
-    input_shape=(32, 28, 28, 1)
-    loss="categorical_crossentropy"
-    optimizer="adam"
-    metrics=["accuracy"]
 
     # retrieve (and optionally process) the data
     if data_source == 'keras':
@@ -200,6 +199,13 @@ def federated_learning(global_model,
                                     global_model_weights=gm_weights_np, 
                                     num_samples=num_samples,
                                     epochs=epochs,
+                                    data_source=data_source,
+                                    preprocess=preprocess,
+                                    keras_dataset=keras_dataset,
+                                    input_shape=input_shape,
+                                    loss=loss,
+                                    optimizer=optimizer,
+                                    metrics=metrics,
                                     endpoint_id=e))
         
         # extract weights from each edge model
