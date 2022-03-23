@@ -4,6 +4,7 @@ from tensorflow.keras import layers
 import time
 from timeit import default_timer as timer
 import csv
+from datetime import datetime
 
 from funcx.sdk.client import FuncXClient
 from funcx.sdk.executor import FuncXExecutor
@@ -81,6 +82,7 @@ def training_function(json_model_config,
     from tensorflow import keras
     import numpy as np
 
+    data_start = timer()
     # retrieve (and optionally process) the data
     if data_source == 'keras':
         available_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
@@ -128,6 +130,7 @@ def training_function(json_model_config,
 
     else:
         raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
+    data_runtime = timer() - data_start
 
     # train the model
     # create the model
@@ -156,15 +159,18 @@ def training_function(json_model_config,
     training_runtime = timer() - training_start
     task_runtime = timer() - task_start
     # return the updated weights and number of samples the model was trained on
-    return {"model_weights":np_model_weights, "samples_count": x_train.shape[0], 'task_runtime':task_runtime, 'training_runtime': training_runtime}
+    return {"model_weights":np_model_weights,
+     "samples_count": x_train.shape[0],
+      'task_runtime':task_runtime,
+       'training_runtime': training_runtime,
+       'data_runtime': data_runtime}
 
 def federated_learning(global_model, 
                       endpoint_ids, 
-                      num_samples=100,
-                      epochs=10,
+                      num_samples,
+                      epochs,
                       loops=1,
-                      time_interval=0,
-                      federated_mode="average",
+                      federated_mode="weighted_average",
                       data_source: str = "keras",
                       preprocess=False,
                       keras_dataset = "mnist",  
@@ -192,6 +198,8 @@ def federated_learning(global_model,
     --------
     
     """
+
+    experiment_start = datetime.now()
     fx = FuncXExecutor(FuncXClient())
 
     # compile the training function
@@ -210,12 +218,12 @@ def federated_learning(global_model,
 
         tasks_start = timer()
         # for each endpoint, submit the function with **kwargs to it
-        for e in endpoint_ids:
+        for e, num_s, num_epoch in zip(endpoint_ids, num_samples, epochs):
             tasks.append(fx.submit(training_function, 
                                    json_model_config=json_config, 
                                     global_model_weights=gm_weights_np, 
-                                    num_samples=num_samples,
-                                    epochs=epochs,
+                                    num_samples=num_s,
+                                    epochs=num_epoch,
                                     data_source=data_source,
                                     preprocess=preprocess,
                                     keras_dataset=keras_dataset,
@@ -228,7 +236,8 @@ def federated_learning(global_model,
         # extract weights from each edge model
         model_weights = [t.result()["model_weights"] for t in tasks]
         tasks_sending_runtime = timer() - tasks_start
-        
+
+        aggregation_start = timer()
         if federated_mode == "average":
             average_weights = np.mean(model_weights, axis=0)
 
@@ -246,6 +255,7 @@ def federated_learning(global_model,
             
         # assign the weights to the global_model
         global_model.set_weights(average_weights)
+        aggregation_runtime = timer() - aggregation_start
 
         print(f'Epoch {i}, Trained Federated Model')
 
@@ -262,6 +272,9 @@ def federated_learning(global_model,
         endpoint_training_runtimes = [t.result()["training_runtime"] for t in tasks]
         average_training_runtime = np.mean(endpoint_training_runtimes, axis=0)
         endpoint_training_runtimes = [round(i, 3) for i in endpoint_training_runtimes]
+
+        endpoint_data_runtimes = [t.result()["data_runtime"] for t in tasks]
+        endpoint_data_runtimes = [round(i, 3) for i in endpoint_data_runtimes]
         
         communication_time = tasks_sending_runtime - max(endpoint_task_runtimes)
         model_size = sum(w.size for w in gm_weights_np) * gm_weights_np.itemsize
@@ -291,7 +304,7 @@ def federated_learning(global_model,
          'accuracy', 'endpoint_accuracies', 'loss', 'endpoint_losses', 'round_runtime',
           'task_and_sending_runtime', 'average_task_runtime',  'endpoint_task_runtimes',
            'communication_time', 'average_training_runtime', 'endpoint_training_runtimes',
-            'client_names', 'files_size']
+            'client_names', 'files_size', 'aggregation_runtime', 'endpoint_data_processing_runtimes']
 
         csv_entry = {'experiment':experiment,
                     'description':description,
@@ -312,11 +325,19 @@ def federated_learning(global_model,
                     'average_training_runtime': average_training_runtime,
                     'endpoint_training_runtimes': endpoint_training_runtimes,
                     'client_names':client_names,
-                    'files_size':model_size}
+                    'files_size':model_size,
+                    'aggregation_runtime': aggregation_runtime,
+                    'endpoint_data_processing_runtimes': endpoint_data_runtimes
+}
 
         with open(csv_path, 'a', encoding='UTF8', newline='') as f:
             writer = csv.DictWriter(f, header)
             writer.writerow(csv_entry)
+
+    experiment_end = datetime.now()
+
+    print(experiment_start)
+    print(experiment_end)
 
     return global_model
 
