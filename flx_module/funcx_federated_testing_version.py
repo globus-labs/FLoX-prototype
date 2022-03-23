@@ -75,6 +75,9 @@ def training_function(json_model_config,
         Can be used to find the weighted average by # of samples seen
 
     """
+    from datetime import datetime
+    task_received_time = str(datetime.now())
+
     from timeit import default_timer as timer
     task_start = timer()
 
@@ -163,7 +166,8 @@ def training_function(json_model_config,
      "samples_count": x_train.shape[0],
       'task_runtime':task_runtime,
        'training_runtime': training_runtime,
-       'data_runtime': data_runtime}
+       'data_runtime': data_runtime,
+       'task_received_time': task_received_time}
 
 def federated_learning(global_model, 
                       endpoint_ids, 
@@ -206,19 +210,22 @@ def federated_learning(global_model,
     
     
     for i in range(loops):
+        round_start_time = str(datetime.now())
         round_start = timer()
         # get the model's architecture and weights
         json_config = global_model.to_json()
         gm_weights = global_model.get_weights()
         gm_weights_np = np.asarray(gm_weights, dtype=object)
 
+        
+        task_sending_times = []
         # train the MNIST model on each of the endpoints and return the result, sending the global weights to each edge
         fx = FuncXExecutor(FuncXClient())
         tasks = []
 
         tasks_start = timer()
         # for each endpoint, submit the function with **kwargs to it
-        for e, num_s, num_epoch in zip(endpoint_ids, num_samples, epochs):
+        for e, num_s, num_epoch in zip(endpoint_ids, num_samples, epochs): 
             tasks.append(fx.submit(training_function, 
                                    json_model_config=json_config, 
                                     global_model_weights=gm_weights_np, 
@@ -232,9 +239,13 @@ def federated_learning(global_model,
                                     optimizer=optimizer,
                                     metrics=metrics,
                                     endpoint_id=e))
+
+            task_sending_times.append(str(datetime.now()))
         
         # extract weights from each edge model
         model_weights = [t.result()["model_weights"] for t in tasks]
+        tasks_received_time = str(datetime.now())
+
         tasks_sending_runtime = timer() - tasks_start
 
         aggregation_start = timer()
@@ -275,6 +286,8 @@ def federated_learning(global_model,
 
         endpoint_data_runtimes = [t.result()["data_runtime"] for t in tasks]
         endpoint_data_runtimes = [round(i, 3) for i in endpoint_data_runtimes]
+
+        task_endpoint_received_times = [t.result()["task_received_time"] for t in tasks]
         
         communication_time = tasks_sending_runtime - max(endpoint_task_runtimes)
         model_size = sum(w.size for w in gm_weights_np) * gm_weights_np.itemsize
@@ -304,7 +317,9 @@ def federated_learning(global_model,
          'accuracy', 'endpoint_accuracies', 'loss', 'endpoint_losses', 'round_runtime',
           'task_and_sending_runtime', 'average_task_runtime',  'endpoint_task_runtimes',
            'communication_time', 'average_training_runtime', 'endpoint_training_runtimes',
-            'client_names', 'files_size', 'aggregation_runtime', 'endpoint_data_processing_runtimes']
+            'client_names', 'files_size', 'aggregation_runtime', 'endpoint_data_processing_runtimes',
+             'task_sent_times', 'task_received_back_times', 'task_endpoint_received_times',
+             'round_start_time', 'round_end_time']
 
         csv_entry = {'experiment':experiment,
                     'description':description,
@@ -327,7 +342,12 @@ def federated_learning(global_model,
                     'client_names':client_names,
                     'files_size':model_size,
                     'aggregation_runtime': aggregation_runtime,
-                    'endpoint_data_processing_runtimes': endpoint_data_runtimes
+                    'endpoint_data_processing_runtimes': endpoint_data_runtimes,
+                    'task_sent_times': task_sending_times,
+                    'task_received_back_times': tasks_received_time,
+                    'task_endpoint_received_times': task_endpoint_received_times,
+                    'round_start_time': round_start_time,
+                    'round_end_time': str(datetime.now())
 }
 
         with open(csv_path, 'a', encoding='UTF8', newline='') as f:
@@ -336,8 +356,8 @@ def federated_learning(global_model,
 
     experiment_end = datetime.now()
 
-    print(experiment_start)
-    print(experiment_end)
+    print(f'Experiment started: {experiment_start}')
+    print(f"Experiment ended: {experiment_end}")
 
     return global_model
 
