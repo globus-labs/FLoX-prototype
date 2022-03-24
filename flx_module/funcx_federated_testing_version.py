@@ -76,7 +76,7 @@ def training_function(json_model_config,
 
     """
     from datetime import datetime
-    task_received_time = str(datetime.now())
+    task_received_time = str(datetime.utcnow())
 
     from timeit import default_timer as timer
     task_start = timer()
@@ -203,14 +203,14 @@ def federated_learning(global_model,
     
     """
 
-    experiment_start = datetime.now()
+    experiment_start = datetime.utcnow()
     fx = FuncXExecutor(FuncXClient())
 
     # compile the training function
     
     
     for i in range(loops):
-        round_start_time = str(datetime.now())
+        round_start_time = str(datetime.utcnow())
         round_start = timer()
         # get the model's architecture and weights
         json_config = global_model.to_json()
@@ -240,11 +240,11 @@ def federated_learning(global_model,
                                     metrics=metrics,
                                     endpoint_id=e))
 
-            task_sending_times.append(str(datetime.now()))
+            task_sending_times.append(str(datetime.utcnow()))
         
         # extract weights from each edge model
         model_weights = [t.result()["model_weights"] for t in tasks]
-        tasks_received_time = str(datetime.now())
+        tasks_received_time = str(datetime.utcnow())
 
         tasks_sending_runtime = timer() - tasks_start
 
@@ -313,48 +313,48 @@ def federated_learning(global_model,
         if data_source == "keras":
             dataset_name = keras_dataset
 
-        header = ['experiment', 'description', 'round', 'epochs', 'num_samples', 'dataset', 'n_clients',
-         'accuracy', 'endpoint_accuracies', 'loss', 'endpoint_losses', 'round_runtime',
-          'task_and_sending_runtime', 'average_task_runtime',  'endpoint_task_runtimes',
-           'communication_time', 'average_training_runtime', 'endpoint_training_runtimes',
-            'client_names', 'files_size', 'aggregation_runtime', 'endpoint_data_processing_runtimes',
-             'task_sent_times', 'task_received_back_times', 'task_endpoint_received_times',
+        header = ['experiment', 'client_name', 'description', 'round', 'epochs', 'num_samples', 'dataset', 'n_clients',
+         'agg_accuracy', 'endpoint_accuracy', 'agg_loss', 'endpoint_loss', 'round_runtime',
+          'task_and_sending_runtime', 'average_task_runtime', 'endpoint_task_runtime',
+           'communication_time', 'average_training_runtime', 'endpoint_training_runtime', 'files_size', 'aggregation_runtime', 'endpoint_data_processing_runtime',
+             'task_sent_time', 'task_received_back_time', 'task_endpoint_received_time',
              'round_start_time', 'round_end_time']
+        
+        for epo, num_sam, ep_accuracy, ep_loss, ep_task_runtime, ep_training_runtime, client_name, ep_data_runtime, tsk_sent_time, tsk_ep_received_time in zip(epochs, num_samples, endpoint_accuracies, endpoint_losses, endpoint_task_runtimes, endpoint_training_runtimes, client_names, endpoint_data_runtimes, task_sending_times, task_endpoint_received_times):
+            csv_entry = {'experiment':experiment,
+                        'client_name':client_name,
+                        'description':description,
+                        'round':i, 
+                        'epochs':epo, 
+                        'num_samples':num_sam, 
+                        'dataset':dataset_name, 
+                        'n_clients':len(endpoint_ids), 
+                        'agg_accuracy':accuracy,
+                        'endpoint_accuracy': ep_accuracy, 
+                        'agg_loss':loss_eval,
+                        'endpoint_loss': ep_loss, 
+                        'round_runtime':round_runtime, 
+                        'task_and_sending_runtime':tasks_sending_runtime,
+                        'average_task_runtime': average_task_runtime,
+                        'endpoint_task_runtime': ep_task_runtime,
+                        'communication_time': communication_time,
+                        'average_training_runtime': average_training_runtime,
+                        'endpoint_training_runtime': ep_training_runtime,
+                        'files_size':model_size,
+                        'aggregation_runtime': aggregation_runtime,
+                        'endpoint_data_processing_runtime': ep_data_runtime,
+                        'task_sent_time': tsk_sent_time,
+                        'task_received_back_time': tasks_received_time,
+                        'task_endpoint_received_time': tsk_ep_received_time,
+                        'round_start_time': round_start_time,
+                        'round_end_time': str(datetime.utcnow())
+    }
 
-        csv_entry = {'experiment':experiment,
-                    'description':description,
-                    'round':i, 
-                    'epochs':epochs, 
-                    'num_samples':num_samples, 
-                    'dataset':dataset_name, 
-                    'n_clients':len(endpoint_ids), 
-                    'accuracy':accuracy,
-                    'endpoint_accuracies': endpoint_accuracies, 
-                    'loss':loss_eval,
-                    'endpoint_losses': endpoint_losses, 
-                    'round_runtime':round_runtime, 
-                    'task_and_sending_runtime':tasks_sending_runtime,
-                    'average_task_runtime': average_task_runtime,
-                    'endpoint_task_runtimes': endpoint_task_runtimes,
-                    'communication_time': communication_time,
-                    'average_training_runtime': average_training_runtime,
-                    'endpoint_training_runtimes': endpoint_training_runtimes,
-                    'client_names':client_names,
-                    'files_size':model_size,
-                    'aggregation_runtime': aggregation_runtime,
-                    'endpoint_data_processing_runtimes': endpoint_data_runtimes,
-                    'task_sent_times': task_sending_times,
-                    'task_received_back_times': tasks_received_time,
-                    'task_endpoint_received_times': task_endpoint_received_times,
-                    'round_start_time': round_start_time,
-                    'round_end_time': str(datetime.now())
-}
+            with open(csv_path, 'a', encoding='UTF8', newline='') as f:
+                writer = csv.DictWriter(f, header)
+                writer.writerow(csv_entry)
 
-        with open(csv_path, 'a', encoding='UTF8', newline='') as f:
-            writer = csv.DictWriter(f, header)
-            writer.writerow(csv_entry)
-
-    experiment_end = datetime.now()
+    experiment_end = datetime.utcnow()
 
     print(f'Experiment started: {experiment_start}')
     print(f"Experiment ended: {experiment_end}")
