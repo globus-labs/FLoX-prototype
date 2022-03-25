@@ -226,6 +226,7 @@ def federated_learning(global_model,
         tasks_start = timer()
         # for each endpoint, submit the function with **kwargs to it
         for e, num_s, num_epoch in zip(endpoint_ids, num_samples, epochs): 
+            task_sending_times.append(str(datetime.utcnow()))
             tasks.append(fx.submit(training_function, 
                                    json_model_config=json_config, 
                                     global_model_weights=gm_weights_np, 
@@ -240,7 +241,6 @@ def federated_learning(global_model,
                                     metrics=metrics,
                                     endpoint_id=e))
 
-            task_sending_times.append(str(datetime.utcnow()))
         
         # extract weights from each edge model
         model_weights = [t.result()["model_weights"] for t in tasks]
