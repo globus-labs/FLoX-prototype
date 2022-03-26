@@ -84,6 +84,7 @@ def training_function(json_model_config,
     # import all the dependencies required for funcX functions)
     from tensorflow import keras
     import numpy as np
+    import os
 
     data_start = timer()
     # retrieve (and optionally process) the data
@@ -130,6 +131,33 @@ def training_function(json_model_config,
                         num_classes=10
                         
                     y_train = keras.utils.to_categorical(y_train, num_classes)
+
+    elif data_source == 'local':        
+        # construct the path
+        x_train_path_file = os.sep.join([path_dir, x_train_name])
+        y_train_path_file = os.sep.join([path_dir, y_train_name])
+
+        # load the files
+        with open(x_train_path_file, 'rb') as f:
+            x_train = np.load(f)
+            
+        with open(y_train_path_file, 'rb') as f:
+            y_train = np.load(f)
+
+        # if preprocess is True & the function is valid, preprocess the data
+        if preprocess:
+            # check if a valid function was given
+            depth = input_shape[3]
+            image_size_y = input_shape[2]
+            image_size_x = input_shape[1]
+
+            if num_samples:
+                idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+                x_train = x_train[idx]
+                y_train = y_train[idx]
+            
+            x_train = x_train.reshape(len(x_train), image_size_x, image_size_y, depth)
+            x_train = x_train / 255.0
 
     else:
         raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
