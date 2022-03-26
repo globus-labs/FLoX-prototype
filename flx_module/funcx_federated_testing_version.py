@@ -47,7 +47,10 @@ def training_function(json_model_config,
                       input_shape=(32, 28, 28, 1),
                       loss="categorical_crossentropy",
                       optimizer="adam",
-                      metrics=["accuracy"]
+                      metrics=["accuracy"],                            
+                      path_dir='/home/pi/datasets', 
+                      x_train_name="mnist_x_train.npy", 
+                      y_train_name="mnist_y_train.npy"
 ):
     """
 
@@ -161,6 +164,7 @@ def training_function(json_model_config,
 
     else:
         raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
+
     data_runtime = timer() - data_start
 
     # train the model
@@ -213,11 +217,14 @@ def federated_learning(global_model,
                       evaluation_function=eval_model,
                       x_test=None,
                       y_test=None, 
-                      csv_path='/content/drive/MyDrive/flx/evaluation/experiments.csv',
+                      csv_path='/content/drive/MyDrive/flx/evaluation/new_experiments.csv',
                       experiment='default',
                       description='default',
                       dataset_name="mnist",
-                      client_names="not provided"):
+                      client_names="not provided",                          
+                      path_dir='/home/pi/datasets', 
+                      x_train_name="mnist_x_train.npy", 
+                      y_train_name="mnist_y_train.npy"):
     """
 
     Parameters
@@ -253,7 +260,7 @@ def federated_learning(global_model,
 
         tasks_start = timer()
         # for each endpoint, submit the function with **kwargs to it
-        for e, num_s, num_epoch in zip(endpoint_ids, num_samples, epochs): 
+        for e, num_s, num_epoch, path_d in zip(endpoint_ids, num_samples, epochs, path_dir): 
             task_sending_times.append(str(datetime.utcnow()))
             tasks.append(fx.submit(training_function, 
                                    json_model_config=json_config, 
@@ -267,6 +274,9 @@ def federated_learning(global_model,
                                     loss=loss,
                                     optimizer=optimizer,
                                     metrics=metrics,
+                                    path_dir=path_d,
+                                    x_train_name=x_train_name,
+                                    y_train_name=y_train_name,
                                     endpoint_id=e))
 
         
