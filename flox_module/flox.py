@@ -193,8 +193,8 @@ def training_function(json_model_config,
 
 def federated_learning(global_model, 
                       endpoint_ids, 
-                      num_samples,
-                      epochs,
+                      num_samples=100,
+                      epochs=5,
                       loops=1,
                       time_interval=0,
                       federated_mode="weighted_average",
@@ -229,7 +229,11 @@ def federated_learning(global_model,
     fx = FuncXExecutor(FuncXClient())
 
     # compile the training function
-    
+    if type(num_samples) == int:
+        num_samples = [num_samples]*len(endpoint_ids)
+
+    if type(epochs) == int:
+        epochs = [epochs]*len(endpoint_ids)
     
     for i in range(loops):
         # get the model's architecture and weights
