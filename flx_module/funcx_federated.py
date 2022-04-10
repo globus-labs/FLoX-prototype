@@ -471,6 +471,10 @@ def federated_learning(global_model,
                       **kwargs):
     """
 
+    Facilitates federated learning on given endpoints
+
+    advanced
+
     Parameters
     ----------
 
