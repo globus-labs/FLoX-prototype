@@ -473,7 +473,7 @@ def federated_learning(global_model,
 
     Facilitates federated learning on given endpoints
 
-    advanced
+    advanced version
 
     Parameters
     ----------
