@@ -167,8 +167,11 @@ def federated_learning(global_model,
                       y_test=None):
     """
 
+    Facilitates federated learning on given endpoints
+
     Parameters
     ----------
+
 
     Returns
     -------
