@@ -29,13 +29,25 @@ def get_edge_weights(sample_counts):
     return fractions
 
 def eval_model(m, x, y, silent=False):
-    ''' evaluate model on dataset x,y'''
+    """
+    Evaluate the model on a datset
+
+    Parameters
+    ----------
+    m: Tensorflow model
+
+    x: numpy array
+        dataset entries, e.g. x_test
+    
+    y: numpy array
+        labels for the entries, e.g., y_test
+    
+    """
     score = m.evaluate(x, y, verbose=0)
     if not silent:
         print("Test loss:", score[0])
         print("Test accuracy:", score[1])
     return score[0], score[1]
-
 
 def training_function(json_model_config, 
                       global_model_weights, 
@@ -206,6 +218,7 @@ def federated_learning(global_model,
                       num_samples,
                       epochs,
                       loops=1,
+                      time_interval=0,
                       federated_mode="weighted_average",
                       data_source: str = "keras",
                       preprocess=False,
@@ -391,6 +404,8 @@ def federated_learning(global_model,
             with open(csv_path, 'a', encoding='UTF8', newline='') as f:
                 writer = csv.DictWriter(f, header)
                 writer.writerow(csv_entry)
+
+        time.sleep(time_interval)
 
     experiment_end = datetime.utcnow()
 
