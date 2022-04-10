@@ -25,13 +25,26 @@ def get_edge_weights(sample_counts):
     fractions = sample_counts/total
     return fractions
 
-def eval_model(m, x, y):
-    ''' evaluate model on dataset x,y'''
+def eval_model(m, x, y, silent=False):
+    """
+    Evaluate the model on a datset
+
+    Parameters
+    ----------
+    m: Tensorflow model
+
+    x: numpy array
+        dataset entries, e.g. x_test
+    
+    y: numpy array
+        labels for the entries, e.g., y_test
+    
+    """
     score = m.evaluate(x, y, verbose=0)
-    print("Test loss:", score[0])
-    print("Test accuracy:", score[1])
-
-
+    if not silent:
+        print("Test loss:", score[0])
+        print("Test accuracy:", score[1])
+    return score[0], score[1]
 def training_function(json_model_config, 
                       global_model_weights, 
                       num_samples=None,
@@ -42,7 +55,10 @@ def training_function(json_model_config,
                       input_shape=(32, 28, 28, 1),
                       loss="categorical_crossentropy",
                       optimizer="adam",
-                      metrics=["accuracy"]
+                      metrics=["accuracy"],                            
+                      path_dir='/home/pi/datasets', 
+                      x_train_name="mnist_x_train.npy", 
+                      y_train_name="mnist_y_train.npy"
 ):
     """
 
@@ -73,6 +89,7 @@ def training_function(json_model_config,
     # import all the dependencies required for funcX functions)
     from tensorflow import keras
     import numpy as np
+    import os
 
     # retrieve (and optionally process) the data
     if data_source == 'keras':
@@ -118,6 +135,32 @@ def training_function(json_model_config,
                         num_classes=10
                         
                     y_train = keras.utils.to_categorical(y_train, num_classes)
+    elif data_source == 'local':        
+        # construct the path
+        x_train_path_file = os.sep.join([path_dir, x_train_name])
+        y_train_path_file = os.sep.join([path_dir, y_train_name])
+
+        # load the files
+        with open(x_train_path_file, 'rb') as f:
+            x_train = np.load(f)
+            
+        with open(y_train_path_file, 'rb') as f:
+            y_train = np.load(f)
+
+        # if preprocess is True & the function is valid, preprocess the data
+        if preprocess:
+            # check if a valid function was given
+            depth = input_shape[3]
+            image_size_y = input_shape[2]
+            image_size_x = input_shape[1]
+
+            if num_samples:
+                idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
+                x_train = x_train[idx]
+                y_train = y_train[idx]
+            
+            x_train = x_train.reshape(len(x_train), image_size_x, image_size_y, depth)
+            x_train = x_train / 255.0
 
     else:
         raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
@@ -150,11 +193,11 @@ def training_function(json_model_config,
 
 def federated_learning(global_model, 
                       endpoint_ids, 
-                      num_samples=100,
-                      epochs=10,
+                      num_samples,
+                      epochs,
                       loops=1,
                       time_interval=0,
-                      federated_mode="average",
+                      federated_mode="weighted_average",
                       data_source: str = "keras",
                       preprocess=False,
                       keras_dataset = "mnist",  
@@ -164,7 +207,10 @@ def federated_learning(global_model,
                       metrics=["accuracy"],
                       evaluation_function=eval_model,
                       x_test=None,
-                      y_test=None):
+                      y_test=None,
+                      path_dir='/home/pi/datasets', 
+                      x_train_name="mnist_x_train.npy", 
+                      y_train_name="mnist_y_train.npy"):
     """
 
     Facilitates federated learning on given endpoints
@@ -196,12 +242,12 @@ def federated_learning(global_model,
         tasks = []
 
         # for each endpoint, submit the function with **kwargs to it
-        for e in endpoint_ids:
+        for e, num_s, num_epoch, path_d in zip(endpoint_ids, num_samples, epochs, path_dir): 
             tasks.append(fx.submit(training_function, 
                                    json_model_config=json_config, 
                                     global_model_weights=gm_weights_np, 
-                                    num_samples=num_samples,
-                                    epochs=epochs,
+                                    num_samples=num_s,
+                                    epochs=num_epoch,
                                     data_source=data_source,
                                     preprocess=preprocess,
                                     keras_dataset=keras_dataset,
@@ -209,6 +255,9 @@ def federated_learning(global_model,
                                     loss=loss,
                                     optimizer=optimizer,
                                     metrics=metrics,
+                                    path_dir=path_d,
+                                    x_train_name=x_train_name,
+                                    y_train_name=y_train_name,
                                     endpoint_id=e))
         
         # extract weights from each edge model
@@ -235,7 +284,7 @@ def federated_learning(global_model,
         print(f'Epoch {i}, Trained Federated Model')
 
         if x_test is not None and y_test is not None and evaluation_function and callable(evaluation_function):
-            evaluation_function(global_model, x_test, y_test)
+            loss_eval, accuracy = evaluation_function(global_model, x_test, y_test)
 
         time.sleep(time_interval)
 
