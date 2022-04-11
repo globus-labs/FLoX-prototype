@@ -45,22 +45,25 @@ def eval_model(m, x, y, silent=False):
         print("Test loss:", score[0])
         print("Test accuracy:", score[1])
     return score[0], score[1]
+
 def training_function(json_model_config, 
                       global_model_weights, 
                       num_samples=None,
                       epochs=10,     
                       data_source="keras",
-                      preprocess=True,
                       keras_dataset="mnist",
+                      preprocess=True,
+                      path_dir='/home/pi/datasets', 
+                      x_train_name="mnist_x_train.npy", 
+                      y_train_name="mnist_y_train.npy",
                       input_shape=(32, 28, 28, 1),
                       loss="categorical_crossentropy",
                       optimizer="adam",
-                      metrics=["accuracy"],                            
-                      path_dir='/home/pi/datasets', 
-                      x_train_name="mnist_x_train.npy", 
-                      y_train_name="mnist_y_train.npy"
+                      metrics=["accuracy"]                                               
 ):
     """
+    This function gets deployed to the given endpoints with corresponding parameters. 
+    Returns the updated model weights and number of samples it was trained on.
 
     Parameters
     ----------
@@ -75,6 +78,38 @@ def training_function(json_model_config,
 
     epochs: int
         the number of epochs to train the model for
+
+    data_source: str
+        the function supports three data sources: "local", "keras"
+        for "local" and "keras", see get_local_data and get_keras_data functions
+
+    keras_dataset: str
+        specifies one of the default keras datasets to use if using "keras" data source
+        ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+
+    preprocess: boolean
+            if True, will attempt to preprocess your data from "keras" data sources
+
+    path_dir: str
+        path to the folder with x_train and y_train; needed when data_sourse="local"
+
+    x_train_name: str
+        filename for x_train; needed when data_sourse="local"
+
+    y_train_name: str
+        file name for y_train; needed when data_sourse="local"
+
+    input_shape: tupple
+        input shape for the provided model
+    
+    loss: str
+        loss for TF's model.fit() function
+
+    optimizer: str
+        optimizer for for TF's model.fit() function
+
+    metrics: str/list 
+        metrics for TF's model.fit() function. E.g, metrics=["accuracy"],
 
     Returns
     -------
@@ -105,11 +140,12 @@ def training_function(json_model_config,
         }
         image_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
 
-        # check if the dataset exists
+        # check if the Keras dataset exists
         if keras_dataset not in available_datasets:
             raise Exception(f"Please select one of the built-in Keras datasets: {available_datasets}")
 
         else:
+            # load the data
             (x_train, y_train), _ = dataset_mapping[keras_dataset].load_data()
 
             # take a random set of images
@@ -135,6 +171,7 @@ def training_function(json_model_config,
                         num_classes=10
                         
                     y_train = keras.utils.to_categorical(y_train, num_classes)
+
     elif data_source == 'local':        
         # construct the path
         x_train_path_file = os.sep.join([path_dir, x_train_name])
@@ -154,30 +191,29 @@ def training_function(json_model_config,
             image_size_y = input_shape[2]
             image_size_x = input_shape[1]
 
+            # take a limited number of samples, if indicated
             if num_samples:
                 idx = np.random.choice(np.arange(len(x_train)), num_samples, replace=True)
                 x_train = x_train[idx]
                 y_train = y_train[idx]
             
+            # reshape and scale to pixel values to 0-1
             x_train = x_train.reshape(len(x_train), image_size_x, image_size_y, depth)
             x_train = x_train / 255.0
 
     else:
-        raise Exception("Please choose one of data sources: ['local', 'keras', 'custom']")
+        raise Exception("Please choose one of data sources: ['local', 'keras']")
 
-    # train the model
     # create the model
     model = keras.models.model_from_json(json_model_config)
 
     # compile the model and set weights to the global model
     model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
-    #global_model_weights = np.asarray(global_model_weights, dtype=object)
-    # this is a temporary fix for a bug on the testing side
-    # where it says I need to build the model first   
     try:
         model.set_weights(global_model_weights)
     except:
+        # some older TF versions require the model to be 'built' first
         model.build(input_shape=input_shape)
         model.set_weights(global_model_weights)
 
@@ -197,55 +233,129 @@ def federated_learning(global_model,
                       epochs=5,
                       loops=1,
                       time_interval=0,
-                      federated_mode="weighted_average",
+                      aggregation_mode="weighted_average",
                       data_source: str = "keras",
-                      preprocess=False,
                       keras_dataset = "mnist",  
+                      preprocess=False,
+                      path_dir='/home/pi/datasets', 
+                      x_train_name="mnist_x_train.npy", 
+                      y_train_name="mnist_y_train.npy",
                       input_shape=(32, 28, 28, 1),
                       loss="categorical_crossentropy",
                       optimizer="adam", 
                       metrics=["accuracy"],
                       evaluation_function=eval_model,
                       x_test=None,
-                      y_test=None,
-                      path_dir='/home/pi/datasets', 
-                      x_train_name="mnist_x_train.npy", 
-                      y_train_name="mnist_y_train.npy"):
+                      y_test=None
+                      ):
     """
-
-    Facilitates federated learning on given endpoints
+    Facilitates Federated Learning for *loops* rounds. 
 
     Parameters
     ----------
+    global_model: TF model object
+        compiled TF model that will be deployed for training on the endpoints
+
+    endpoint_ids: list of str
+        a list with endpoint_ids to include in the FL process. 
+        The ids can be retrieved by running 'funcx-endpoint list' on participating devices
+
+    num_samples: int or list
+        indicates how many samples to get for training on endpoints
+        if int, applies the same num_samples to all endpoints. 
+        if list, it will use the corresponding number of samples for each device
+        the list should have the same number of entries as the number of endpoints
+
+
+    epochs: int or list
+        indicates how many epochs to use for training on endpoints
+        if int, applies the same number of epochs to all endpoints. 
+        if list, it will use the corresponding number of epochs for each device
+        the list should have the same number of entries as the number of endpoints
+
+    loops: int
+        defines how many FL rounds to run. Each round consists of deploying the mode, training
+        aggregating the updates, and reassigning new weights to the model. 
+
+    time_interval: int
+        defines the pause between FL rounds in seconds (default=0). Can be useful if you want to run 
+        a round every minute/hour/day.
+
+    aggregation_mode: str
+        defines the aggregation mode from a choice of a simple 'average' or a 'weighted_average'
+        the 'weighted_average' aggregates the updates based on how many samples each updates has 
+        been trained on. This gives more weight to updates from devices that have seen more data.
+
+    data_source: str
+        the function supports three data sources: "local", "keras"
+        for "local" and "keras", see get_local_data and get_keras_data functions
+
+    keras_dataset: str
+        specifies one of the default keras datasets to use if using "keras" data source
+        ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
+
+    preprocess: boolean
+            if True, will attempt to preprocess your data from "keras" data sources
+
+    path_dir: str
+        path to the folder with x_train and y_train; needed when data_sourse="local"
+
+    x_train_name: str
+        filename for x_train; needed when data_sourse="local"
+
+    y_train_name: str
+        file name for y_train; needed when data_sourse="local"
+
+    input_shape: tupple
+        input shape for the provided model
+    
+    loss: str
+        loss for TF's model.fit() function
+
+    optimizer: str
+        optimizer for for TF's model.fit() function
+
+    metrics: str/list 
+        metrics for TF's model.fit() function. E.g, metrics=["accuracy"],
+
+    evaluation_function: function
+        if supplied, evaluates the model on x_test and y_test
+
+    x_test: list/numpy array/tensors
+        x_test data for testing
+
+    y_test: list
+        y_test labels for x_test
 
 
     Returns
     -------
+    global_model: TF model
+        the original model but with updated weights after all the FL rounds
 
-    Examples
-    --------
-    
     """
+    # instantiate the FuncXExecutor
     fx = FuncXExecutor(FuncXClient())
 
-    # compile the training function
+    # if num_samples or epochs is an int, convert to list so the same number can be applied to all endpoints
     if type(num_samples) == int:
         num_samples = [num_samples]*len(endpoint_ids)
 
     if type(epochs) == int:
         epochs = [epochs]*len(endpoint_ids)
     
+    # start running FL loops
     for i in range(loops):
+
         # get the model's architecture and weights
         json_config = global_model.to_json()
         gm_weights = global_model.get_weights()
         gm_weights_np = np.asarray(gm_weights, dtype=object)
 
-        # train the MNIST model on each of the endpoints and return the result, sending the global weights to each edge
-        fx = FuncXExecutor(FuncXClient())
+        #fx = FuncXExecutor(FuncXClient())
         tasks = []
 
-        # for each endpoint, submit the function with **kwargs to it
+        # submit the corresponding parameters to each endpoint for a round of FL 
         for e, num_s, num_epoch, path_d in zip(endpoint_ids, num_samples, epochs, path_dir): 
             tasks.append(fx.submit(training_function, 
                                    json_model_config=json_config, 
@@ -253,25 +363,26 @@ def federated_learning(global_model,
                                     num_samples=num_s,
                                     epochs=num_epoch,
                                     data_source=data_source,
-                                    preprocess=preprocess,
                                     keras_dataset=keras_dataset,
+                                    preprocess=preprocess,
+                                    path_dir=path_d,
+                                    x_train_name=x_train_name,
+                                    y_train_name=y_train_name,
                                     input_shape=input_shape,
                                     loss=loss,
                                     optimizer=optimizer,
                                     metrics=metrics,
-                                    path_dir=path_d,
-                                    x_train_name=x_train_name,
-                                    y_train_name=y_train_name,
                                     endpoint_id=e))
         
-        # extract weights from each edge model
+        # extract model updates from each endpoints once they are available
         model_weights = [t.result()["model_weights"] for t in tasks]
         
-        if federated_mode == "average":
+        # aggregate the updates using simple 'average' or 'weighted_average'
+        if aggregation_mode == "average":
             average_weights = np.mean(model_weights, axis=0)
 
-        elif federated_mode == "weighted_average":
-            # get the weights
+        elif aggregation_mode == "weighted_average":
+            # get the weights of model updates based on how much data they have been trained on
             sample_counts = np.array([t.result()["samples_count"] for t in tasks])
             edge_weights = get_edge_weights(sample_counts)
             
@@ -279,18 +390,21 @@ def federated_learning(global_model,
             average_weights = np.average(model_weights, weights=edge_weights, axis=0)
 
         else:
-            raise Exception(f"Federated mode {federated_mode} is not recognized. \
+            raise Exception(f"Federated mode {aggregation_mode} is not recognized. \
                  Please select one of the available modes: ['average', 'weighted_average']")
             
-        # assign the weights to the global_model
+        # assign the updated weights to the global_model
         global_model.set_weights(average_weights)
 
         print(f'Epoch {i}, Trained Federated Model')
 
+        # if the all paramters are supplied, evaluate the model
         if x_test is not None and y_test is not None and evaluation_function and callable(evaluation_function):
             loss_eval, accuracy = evaluation_function(global_model, x_test, y_test)
 
-        time.sleep(time_interval)
+        # if time_interval is supplied, wait for *time_interval* seconds
+        if time_interval > 0:
+            time.sleep(time_interval)
 
     return global_model
 
