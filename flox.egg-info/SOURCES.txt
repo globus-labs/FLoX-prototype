@@ -1,0 +1,10 @@
+README.md
+setup.py
+flox/__init__.py
+flox/flox.py
+flox/utils.py
+flox.egg-info/PKG-INFO
+flox.egg-info/SOURCES.txt
+flox.egg-info/dependency_links.txt
+flox.egg-info/requires.txt
+flox.egg-info/top_level.txt
