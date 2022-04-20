@@ -1,4 +1,6 @@
+LICENSE.TXT
 README.md
+setup.cfg
 setup.py
 flox/__init__.py
 flox/flox.py
