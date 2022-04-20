@@ -21,7 +21,7 @@ Classifier: Programming Language :: Python :: 3.7
 Classifier: Programming Language :: Python :: 3.8
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
-Classifier: Programming Language :: Pyth   on :: 3.11
+Classifier: Programming Language :: Python :: 3.11
 License-File: LICENSE.TXT
 
 UNKNOWN
