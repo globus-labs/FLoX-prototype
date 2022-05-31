@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 setup(
-    name='flox',
-    packages=find_packages(include=['flox']),
+    name='pyflox',
+    packages=find_packages(include=['pyflox']),
     version='0.1.0',
     description='Library for serverless Federated Learning experiments.',
     url='https://github.com/nikita-kotsehub/FLoX',
