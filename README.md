@@ -9,8 +9,7 @@ This is initial documentation that will be soon expanded.
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install flox.
 
 ```bash
-# seems like flox is taken, will update the name soon
-pip install flox
+pip install pyflox
 ```
 
 ## Usage
