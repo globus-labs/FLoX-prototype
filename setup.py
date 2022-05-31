@@ -2,10 +2,10 @@ from setuptools import find_packages, setup
 setup(
     name='pyflox',
     packages=find_packages(include=['pyflox']),
-    version='0.1.0',
+    version='0.1.2',
     description='Library for serverless Federated Learning experiments.',
     url='https://github.com/nikita-kotsehub/FLoX',
-    download_url='https://github.com/nikita-kotsehub/FLoX/archive/refs/tags/v0.1.1.tar.gz',
+    download_url='https://github.com/nikita-kotsehub/FLoX/archive/refs/tags/v0.1.2.tar.gz',
     author='Nikita Kotsehub',
     author_email='mykyta.kotsehub@gmail.com',
     license='MIT',
