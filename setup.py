@@ -1,9 +1,18 @@
 from setuptools import find_packages, setup
+
+# read the contents of your README file
+from pathlib import Path
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
+
 setup(
     name='pyflox',
     packages=find_packages(include=['flox']),
-    version='0.1.3',
+    version='0.1.5',
     description='Library for serverless Federated Learning experiments.',
+    readme="README.md",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/nikita-kotsehub/FLoX',
     download_url='https://github.com/nikita-kotsehub/FLoX/archive/refs/tags/v0.1.3-test.tar.gz',
     author='Nikita Kotsehub',
