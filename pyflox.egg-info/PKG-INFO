@@ -1,0 +1,28 @@
+Metadata-Version: 2.1
+Name: pyflox
+Version: 0.1.2
+Summary: Library for serverless Federated Learning experiments.
+Home-page: https://github.com/nikita-kotsehub/FLoX
+Author: Nikita Kotsehub
+Author-email: mykyta.kotsehub@gmail.com
+License: MIT
+Download-URL: https://github.com/nikita-kotsehub/FLoX/archive/refs/tags/v0.1.2.tar.gz
+Keywords: federated_learning,serverless,edge_devices
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Software Development :: Build Tools
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python ::   3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+License-File: LICENSE.TXT
+
+UNKNOWN
+

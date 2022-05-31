@@ -1,0 +1,9 @@
+LICENSE.TXT
+README.md
+setup.cfg
+setup.py
+pyflox.egg-info/PKG-INFO
+pyflox.egg-info/SOURCES.txt
+pyflox.egg-info/dependency_links.txt
+pyflox.egg-info/requires.txt
+pyflox.egg-info/top_level.txt
