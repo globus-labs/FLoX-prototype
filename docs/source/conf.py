@@ -2,9 +2,9 @@
 
 # -- Project information
 
-project = 'Lumache'
-copyright = '2021, Graziella'
-author = 'Graziella'
+project = 'FLoX'
+copyright = '2022, Globus Labs'
+author = 'Globus Labs'
 
 release = '0.1'
 version = '0.1.0'
