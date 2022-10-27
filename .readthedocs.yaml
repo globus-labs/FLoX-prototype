@@ -11,6 +11,6 @@ build:
 python:
   install:
     - method: pip
-      path: ./flox
+      path: .
       extra_requirements:
         - docs
