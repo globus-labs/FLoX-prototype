@@ -14,3 +14,4 @@ Contents
 
    install
    usage
+   API reference <_autosummary/flox>
