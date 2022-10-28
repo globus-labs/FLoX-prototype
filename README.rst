@@ -1,25 +1,50 @@
 ====
 FLoX - **F**\ ederated **L**\ earning on func\ **X**
 ====
-|docs|
+|docs| |licence|
 
 .. |docs| image:: https://readthedocs.org/projects/pyflox/badge/?version=latest
    :target: https://pyflox.readthedocs.io/en/latest/index.html
    :alt: Documentation Status
+.. |licence| image:: https://img.shields.io/badge/license-MIT-blue
+   :target: https://choosealicense.com/licenses/mit/
+   :alt: MIT License
 
 FLoX (**F**\ ederated **L**\ earning on func\ **X**) is a Python library
-for serverless Federated Learning experiments.
-
-This is initial documentation that will be soon expanded. 
+for serverless Federated Learning experiments. Federated Learning (FL) experiments. 
+FLoX makes it easy and fast to set up your FL infrastructure, allowing you to start
+running experiments in under 5 minutes. 
+Start with :ref:`Installation`, and then follow our Quickstart tutorial and examples to get started!
 
 Installation
 ============
 
-Use the package manager `pip <https://pip.pypa.io/en/stable/>`_ to install flox.
+*Controller* is a device from which Federated Learning is facilitated, such as your laptop. 
+*Endpoints* are devices that participate in Federated Learning, such as Raspberry Pis.
+
+Use the package manager `pip <https://pip.pypa.io/en/stable/>`_ to install flox
+on the *Controller*:
 
 .. code-block:: console
 
    (.venv) $ pip install pyflox
+
+To be able to include your *endpoints* into the Federated Learning process,
+you need to install `funcx-endpoint <https://funcx.readthedocs.io/en/latest/endpoints.html>`_:
+
+.. code-block:: console
+
+   (.endpoint_venv) $ python3 -m pipx install funcx_endpoint
+
+Finally, install Tensorflow on both the Controller and endpoints.
+As of now, FLoX only supports Tensorflow, although support for PyTorch will be added soon too.
+
+.. code-block:: console
+
+   (.venv) $ pip install tensorflow==1.14.0 
+
+*Note*: ``funcX-endpoint`` is only supported on Linux. 
+FLoX Controller functionality is supported on MacOS, Linux and Windows.
 
 Usage
 =====
