@@ -1,5 +1,5 @@
 LICENSE.TXT
-README.md
+README.rst
 setup.cfg
 setup.py
 flox/__init__.py
