@@ -14,7 +14,20 @@ FLoX (**F**\ ederated **L**\ earning on func\ **X**) is a Python library
 for serverless Federated Learning experiments. Federated Learning (FL) experiments. 
 FLoX makes it easy and fast to set up your FL infrastructure, allowing you to start
 running experiments in under 5 minutes. 
-Start with :ref:`Installation`, and then follow our Quickstart tutorial and examples to get started!
+Follow our Quickstart tutorial and examples to get started!
+
+Quickstart
+=====
+
+To get started with FLoX, check out this `Google Colab tutorial`_.
+
+|colab_quickstart|
+
+.. |colab_quickstart| image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/drive/10en48ipDi9qsDQdgOCvQiYQ58Rqqk8mB?usp=sharing
+   :alt: Documentation Status
+
+.. _Google Colab tutorial: https://colab.research.google.com/drive/10en48ipDi9qsDQdgOCvQiYQ58Rqqk8mB#scrollTo=sL0dIUCTEURR
 
 Installation
 ============
@@ -45,19 +58,6 @@ As of now, FLoX only supports Tensorflow, although support for PyTorch will be a
 
 *Note*: ``funcX-endpoint`` is only supported on Linux. 
 FLoX Controller functionality is supported on MacOS, Linux and Windows.
-
-Quickstart
-=====
-
-To get started with FLoX, check out this `Google Colab tutorial`_.
-
-|colab_quickstart|
-
-.. |colab_quickstart| image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/drive/10en48ipDi9qsDQdgOCvQiYQ58Rqqk8mB?usp=sharing
-   :alt: Documentation Status
-
-.. _Google Colab tutorial: https://colab.research.google.com/drive/10en48ipDi9qsDQdgOCvQiYQ58Rqqk8mB#scrollTo=sL0dIUCTEURR
 
 Contributing to FLoX
 ====================
