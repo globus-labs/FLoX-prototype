@@ -6,9 +6,9 @@ FLoX - **F**\ ederated **L**\ earning on func\ **X**
 .. |docs| image:: https://readthedocs.org/projects/pyflox/badge/?version=latest
    :target: https://pyflox.readthedocs.io/en/latest/index.html
    :alt: Documentation Status
-.. |licence| image:: https://img.shields.io/badge/license-MIT-blue
-   :target: https://choosealicense.com/licenses/mit/
-   :alt: MIT License
+.. |licence| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
+   :target: https://github.com/globus-labs/FLoX/blob/main/LICENSE.TXT 
+   :alt: Apache Licence V2.0
 
 FLoX (**F**\ ederated **L**\ earning on func\ **X**) is a Python library
 for serverless Federated Learning experiments. Federated Learning (FL) experiments. 
@@ -36,8 +36,8 @@ you need to install `funcx-endpoint <https://funcx.readthedocs.io/en/latest/endp
 
    (.endpoint_venv) $ python3 -m pipx install funcx_endpoint
 
-Finally, install Tensorflow on both the Controller and endpoints.
-As of now, FLoX only supports Tensorflow, although support for PyTorch will be added soon too.
+Finally, install compatible versions of Tensorflow on both the Controller and endpoints.
+As of now, FLoX only supports Tensorflow, although support for PyTorch will be added soon.
 
 .. code-block:: console
 
@@ -46,34 +46,24 @@ As of now, FLoX only supports Tensorflow, although support for PyTorch will be a
 *Note*: ``funcX-endpoint`` is only supported on Linux. 
 FLoX Controller functionality is supported on MacOS, Linux and Windows.
 
-Usage
+Quickstart
 =====
 
-For a full example, see this `Google Colab tutorial`_.
+To get started with FLoX, check out this `Google Colab tutorial`_.
 
-.. _Google Colab tutorial: https://colab.research.google.com/drive/19X1N8E5adUrmeE10Srs1hSQqCCecv23m?usp=sharing
+|colab_quickstart|
 
-.. code-block:: python
+.. |colab_quickstart| image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/drive/10en48ipDi9qsDQdgOCvQiYQ58Rqqk8mB?usp=sharing
+   :alt: Documentation Status
 
-   from flox.flox import federated_learning
+.. _Google Colab tutorial: https://colab.research.google.com/drive/10en48ipDi9qsDQdgOCvQiYQ58Rqqk8mB#scrollTo=sL0dIUCTEURR
 
-   # performs 5 rounds of Federated Learning train global_model on given endpoint_ids
-   # uses 10 epochs and 100 samples from fashion_mnist dataset for training
-   federated_learning(global_model=global_model, 
-                     endpoint_ids=endpoint_ids,
-                     loops=5,
-                     epochs=10,
-                     keras_dataset="fashion_mnist", 
-                     num_samples=100, 
-                     input_shape=(32, 28, 28, 1))
+Contributing to FLoX
+====================
 
+Contributions are welcome. Please see `CONTRIBUTING.md <https://github.com/globus-labs/FLoX/blob/main/CONTRIBUTING.md>`_.
 
-Contributing
-============
-
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-License
-=======
-
-`MIT <https://choosealicense.com/licenses/mit/>`_
+Documentation
+=============
+Complete documentation for FLoX is available `here <https://pyflox.readthedocs.io/en/latest/>`_.

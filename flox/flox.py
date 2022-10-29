@@ -272,7 +272,7 @@ def federated_learning(global_model,
         the list should have the same number of entries as the number of endpoints
 
     loops: int
-        defines how many FL rounds to run. Each round consists of deploying the mode, training
+        defines how many FL rounds to run. Each round consists of deploying the model, training,
         aggregating the updates, and reassigning new weights to the model. 
 
     time_interval: int
