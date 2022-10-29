@@ -11,9 +11,9 @@ FLoX - **F**\ ederated **L**\ earning on func\ **X**
    :alt: Apache Licence V2.0
 
 FLoX (**F**\ ederated **L**\ earning on func\ **X**) is a Python library
-for serverless Federated Learning experiments. Federated Learning (FL) experiments. 
+for serverless Federated Learning experiments.
 FLoX makes it easy and fast to set up your FL infrastructure, allowing you to start
-running experiments in under 5 minutes. 
+running FL workflows in under 5 minutes. 
 Follow our Quickstart tutorial and examples to get started!
 
 Quickstart
