@@ -1,0 +1,3 @@
+[flake8]  # black-compatible
+ignore = W503, W504, E203, B008, E501
+max-line-length = 88

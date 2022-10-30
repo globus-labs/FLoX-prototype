@@ -11,11 +11,11 @@ For a full example, see this `Google Colab tutorial`_.
 
    # performs 5 rounds of Federated Learning train global_model on given endpoint_ids
    # uses 10 epochs and 100 samples from fashion_mnist dataset for training
-   federated_learning(global_model=global_model, 
+   federated_learning(global_model=global_model,
                      endpoint_ids=endpoint_ids,
                      loops=5,
                      epochs=10,
-                     keras_dataset="fashion_mnist", 
-                     num_samples=100, 
+                     keras_dataset="fashion_mnist",
+                     num_samples=100,
                      input_shape=(32, 28, 28, 1))
 

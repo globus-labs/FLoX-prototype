@@ -1,6 +1,6 @@
 .. _installation:
 
-Installation 
+Installation
 ------------
 
 To use Flox, first install it using pip:
