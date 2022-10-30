@@ -3,7 +3,7 @@ Usage
 
 For a full example, see this `Google Colab tutorial`_.
 
-.. _Google Colab tutorial: https://colab.research.google.com/drive/19X1N8E5adUrmeE10Srs1hSQqCCecv23m?usp=sharing
+.. _Google Colab tutorial: https://colab.research.google.com/drive/10en48ipDi9qsDQdgOCvQiYQ58Rqqk8mB?usp=sharing
 
 .. code-block:: python
 
