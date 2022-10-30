@@ -7,13 +7,13 @@ FLoX - **F**\ ederated **L**\ earning on func\ **X**
    :target: https://pyflox.readthedocs.io/en/latest/index.html
    :alt: Documentation Status
 .. |licence| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
-   :target: https://github.com/globus-labs/FLoX/blob/main/LICENSE.TXT 
+   :target: https://github.com/globus-labs/FLoX/blob/main/LICENSE.TXT
    :alt: Apache Licence V2.0
 
 FLoX (**F**\ ederated **L**\ earning on func\ **X**) is a Python library
 for serverless Federated Learning experiments.
 FLoX makes it easy and fast to set up your FL infrastructure, allowing you to start
-running FL workflows in under 5 minutes. 
+running FL workflows in under 5 minutes.
 Follow our Quickstart tutorial and examples to get started!
 
 Quickstart
@@ -32,7 +32,7 @@ To get started with FLoX, check out this `Google Colab tutorial`_.
 Installation
 ============
 
-*Controller* is a device from which Federated Learning is facilitated, such as your laptop. 
+*Controller* is a device from which Federated Learning is facilitated, such as your laptop.
 *Endpoints* are devices that participate in Federated Learning, such as Raspberry Pis.
 
 Use the package manager `pip <https://pip.pypa.io/en/stable/>`_ to install flox
@@ -54,9 +54,9 @@ As of now, FLoX only supports Tensorflow, although support for PyTorch will be a
 
 .. code-block:: console
 
-   (.venv) $ pip install tensorflow==1.14.0 
+   (.venv) $ pip install tensorflow==1.14.0
 
-*Note*: ``funcX-endpoint`` is only supported on Linux. 
+*Note*: ``funcX-endpoint`` is only supported on Linux.
 FLoX Controller functionality is supported on MacOS, Linux and Windows.
 
 Contributing to FLoX

@@ -1,25 +1,32 @@
-from tensorflow import keras
 import numpy as np
+from tensorflow import keras
 
-def get_test_data(keras_dataset='mnist', num_samples=None, preprocess=True, preprocessing_function=None, **kwargs):
+
+def get_test_data(
+    keras_dataset="mnist",
+    num_samples=None,
+    preprocess=True,
+    preprocessing_function=None,
+    **kwargs,
+):
     """
-    Returns (x_test, y_test) of a chosen built-in Keras dataset. 
+    Returns (x_test, y_test) of a chosen built-in Keras dataset.
     Also preprocesses the image datasets (mnist, fashion_mnist, cifar10, cifar100) by default.
 
     Parameters
     ----------
     keras_dataset: str
-        one of the available Keras datasets: 
+        one of the available Keras datasets:
         ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
 
-    num_samples: int 
+    num_samples: int
         randomly samples n data points from (x_test, y_test). Set to None by default.
 
     preprocess: boolean
-        if True, preprocesses (x_test, y_test) 
+        if True, preprocesses (x_test, y_test)
 
     preprocessing_function: function
-        a custom user-provided function that processes (x_test, y_test) and outputs 
+        a custom user-provided function that processes (x_test, y_test) and outputs
         a tuple (x_test, y_test)
 
     Returns
@@ -28,21 +35,31 @@ def get_test_data(keras_dataset='mnist', num_samples=None, preprocess=True, prep
         testing data
 
     """
-    available_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100', 'imdb', 'reuters', 'boston_housing']
-    dataset_mapping= {
-        'mnist': keras.datasets.mnist,
-        'fashion_mnist': keras.datasets.fashion_mnist,
-        'cifar10': keras.datasets.cifar10,
-        'cifar100': keras.datasets.cifar100,
-        'imdb': keras.datasets.imdb,
-        'reuters': keras.datasets.reuters,
-        'boston_housing': keras.datasets.boston_housing
+    available_datasets = [
+        "mnist",
+        "fashion_mnist",
+        "cifar10",
+        "cifar100",
+        "imdb",
+        "reuters",
+        "boston_housing",
+    ]
+    dataset_mapping = {
+        "mnist": keras.datasets.mnist,
+        "fashion_mnist": keras.datasets.fashion_mnist,
+        "cifar10": keras.datasets.cifar10,
+        "cifar100": keras.datasets.cifar100,
+        "imdb": keras.datasets.imdb,
+        "reuters": keras.datasets.reuters,
+        "boston_housing": keras.datasets.boston_housing,
     }
-    image_datasets = ['mnist', 'fashion_mnist', 'cifar10', 'cifar100']
+    image_datasets = ["mnist", "fashion_mnist", "cifar10", "cifar100"]
 
     # check if the dataset exists
     if keras_dataset not in available_datasets:
-        raise Exception(f"Please select one of the built-in Keras datasets: {available_datasets}")
+        raise Exception(
+            f"Please select one of the built-in Keras datasets: {available_datasets}"
+        )
 
     else:
         _, (x_test, y_test) = dataset_mapping[keras_dataset].load_data()
@@ -58,7 +75,7 @@ def get_test_data(keras_dataset='mnist', num_samples=None, preprocess=True, prep
                 (x_test, y_test) = preprocessing_function(x_test, y_test)
 
             else:
-                # do default image processing for built-in Keras images    
+                # do default image processing for built-in Keras images
                 if keras_dataset in image_datasets:
                     # Scale images to the [0, 1] range
                     x_test = x_test.astype("float32") / 255
@@ -68,11 +85,11 @@ def get_test_data(keras_dataset='mnist', num_samples=None, preprocess=True, prep
                         x_test = np.expand_dims(x_test, -1)
 
                     # convert class vectors to binary class matrices
-                    if keras_dataset == 'cifar100':
-                        num_classes=100
+                    if keras_dataset == "cifar100":
+                        num_classes = 100
                     else:
-                        num_classes=10
-                        
+                        num_classes = 10
+
                     y_test = keras.utils.to_categorical(y_test, num_classes)
 
         return (x_test, y_test)

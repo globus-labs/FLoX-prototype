@@ -2,5 +2,5 @@ We welcome contributions! Pull requests are welcome. For major changes, please o
 
 ## Legal Notice
 
-All contributions must and will be licensed under [MIT](https://choosealicense.com/licenses/mit/). 
+All contributions must and will be licensed under [MIT](https://choosealicense.com/licenses/mit/).
 
