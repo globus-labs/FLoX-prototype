@@ -13,13 +13,11 @@ class TensorflowTrainer(flox.logic.base_model_trainer.BaseModelTrainer):
         loss="categorical_crossentropy",
         optimizer="adam",
         metrics=["accuracy"],
-        epochs=10,
     ) -> None:
         self.model = model
         self.loss = loss
         self.optimizer = optimizer
         self.metrics = metrics
-        self.epochs = epochs
         # test data too?
 
     def get_weights(self) -> NDArrays:
@@ -41,8 +39,8 @@ class TensorflowTrainer(flox.logic.base_model_trainer.BaseModelTrainer):
             loss=self.loss, optimizer=self.optimizer, metrics=self.metrics
         )
 
-    def fit(self, x_train, y_train) -> None:
-        self.model.fit(x_train, y_train, epochs=self.epochs)
+    def fit(self, x_train, y_train, epochs=10) -> None:
+        self.model.fit(x_train, y_train, epochs=epochs)
 
     def evaluate(self, x_test, y_test):
         scores = self.model.evaluate(x_test, y_test, verbose=0)
