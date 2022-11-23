@@ -1,13 +1,8 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 
 class BaseModelTrainer(ABC):
-
-    arch: any
-
-    def __init__(self, arch):
-        self.arch = arch
-
+    @abstractmethod
     def fit(self):
         """DocString"""
 
@@ -20,7 +15,7 @@ class BaseModelTrainer(ABC):
     def set_weights(self):
         """DocString"""
 
-    def build_model(self):
+    def create_model(self):
         """DocString"""
 
     def compile_model(self):

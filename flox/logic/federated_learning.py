@@ -19,7 +19,7 @@ def federated_learning(
 
         # 4. Submit the tasks to endpoints
         for e in endpoint_ids:
-            Executor.submit(ClientLogic, data, e)
+            Executor.submit(client_function, ClientLogic, data, e)
 
         # 5. Retrieve results
         results = Executor.get_results()
@@ -28,7 +28,11 @@ def federated_learning(
         updated_weights = ServerLogic.aggregate(results)
 
         # 7. Update weights
-        ModelTrainer.update_weights(updated_weights)
+        ModelTrainer.set_weights(updated_weights)
 
         # 8. Evaluate model
         ModelTrainer.evaluate()
+
+
+def client_function(ClientLogic, data):
+    return ClientLogic.run_fl_round(data)
