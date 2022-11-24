@@ -1,6 +1,6 @@
 import concurrent.futures
 
-from logic.base_executor_client import BaseExecutor
+from flox.logic.base_executor import BaseExecutor
 
 
 class LocalExecutor(BaseExecutor):

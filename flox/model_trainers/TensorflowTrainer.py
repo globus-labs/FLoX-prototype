@@ -34,6 +34,9 @@ class TensorflowTrainer(flox.logic.base_model_trainer.BaseModelTrainer):
     def create_model(self, architecture) -> None:
         self.model = keras.models.model_from_json(architecture)
 
+    def build_model(self, input_shape) -> None:
+        self.model.build(input_shape=input_shape)
+
     def compile_model(self) -> None:
         self.model.compile(
             loss=self.loss, optimizer=self.optimizer, metrics=self.metrics
