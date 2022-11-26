@@ -12,9 +12,10 @@ from torch import Tensor
 
 import flox
 from flox.common import EvaluateRes, NDArray, NDArrays
+from flox.logic import BaseModelTrainer
 
 
-class PyTorchTrainer(flox.logic.base_model_trainer.BaseModelTrainer):
+class PyTorchTrainer(BaseModelTrainer):
     def __init__(self, model, criterion=nn.CrossEntropyLoss(), optimizer=None) -> None:
         self.model = model
         self.criterion = criterion

@@ -1,12 +1,9 @@
-import numpy as np
-import tensorflow as tf
 from tensorflow import keras
 
-import flox
 from flox.common import EvaluateRes, NDArray, NDArrays
 
 
-class TensorflowTrainer(flox.logic.base_model_trainer.BaseModelTrainer):
+class TensorflowTrainer:
     def __init__(
         self,
         model,
@@ -18,9 +15,10 @@ class TensorflowTrainer(flox.logic.base_model_trainer.BaseModelTrainer):
         self.loss = loss
         self.optimizer = optimizer
         self.metrics = metrics
-        # test data too?
 
     def get_weights(self) -> NDArrays:
+        import numpy as np
+
         model_weights = self.model.get_weights()
         model_weights_numpy = np.asarray(model_weights, dtype=object)
         return model_weights_numpy
