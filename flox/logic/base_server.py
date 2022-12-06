@@ -1,18 +1,30 @@
-from abc import ABC
+from flox.common import (
+    AggregateIns,
+    AggregateRes,
+    BroadcastRes,
+    ReceiveIns,
+    ReceiveRes,
+    UpdateIns,
+)
 
 
-class FloxServerLogic(ABC):
-    def on_model_init():
+class FloxServerLogic:
+    def on_model_init(self) -> None:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_model_broadcast():
+    def on_model_broadcast(self) -> BroadcastRes:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_model_aggregate():
+    def on_model_aggregate(self, ins: AggregateIns) -> AggregateRes:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_model_receive():
+    def on_model_receive(self, ins: ReceiveIns) -> ReceiveRes:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_model_update():
+    def on_model_update(self, ins: UpdateIns) -> None:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
