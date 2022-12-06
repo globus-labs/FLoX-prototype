@@ -1,21 +1,27 @@
-from abc import ABC
+from flox.common import ConfigFile, FitIns, NDArrays, XYData
 
 
-class FloxClientLogic(ABC):
-    def on_model_receive():
+class FloxClientLogic:
+    def on_model_receive(self) -> None:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_data_retrieve():
+    def on_data_retrieve(self, config: ConfigFile) -> XYData:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_data_prepare():
-        """DocString"""
+    # def on_data_prepare(self):
+    #     """DocString"""
+    #     raise NotImplementedError('Abstract class method. Cannot be called directly.')
 
-    def on_model_fit(trainer_obj):
+    def on_model_fit(self, ins: FitIns) -> NDArrays:
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_model_send():
+    def on_model_send(self):
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def run_round():
+    def run_round(self):
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")

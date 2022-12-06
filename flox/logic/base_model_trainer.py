@@ -1,25 +1,28 @@
-from abc import ABC, abstractmethod
-
-
-class BaseModelTrainer(ABC):
-    @abstractmethod
+class BaseModelTrainer:
     def fit(self):
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
     def evaluate(self):
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
     def get_weights(self):
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
     def set_weights(self):
         """DocString"""
+        raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def create_model(self):
-        """DocString"""
+    # def create_model(self):
+    #     """DocString"""
+    #     raise NotImplementedError('Abstract class method. Cannot be called directly.')
 
-    def compile_model(self):
-        """DocString"""
+    # def compile_model(self):
+    #     """DocString"""
+    #     raise NotImplementedError('Abstract class method. Cannot be called directly.')
 
-    def get_architecture(self):
-        """DocString"""
+    # def get_architecture(self):
+    #     """DocString"""
+    #     raise NotImplementedError('Abstract class method. Cannot be called directly.')

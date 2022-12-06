@@ -1,4 +1,7 @@
-class TestClient:
+from flox.logic import FloxClientLogic
+
+
+class TestClient(FloxClientLogic):
     def on_model_receive():
         pass
 
@@ -74,14 +77,12 @@ class TestClient:
         """DocString"""
         pass
 
-    def on_model_fit(self, ModelTrainer, config, x_train, y_train):
+    def on_model_fit(self, model, ModelTrainer, config, x_train, y_train):
         """DocString"""
         import numpy as np
 
-        # ModelTrainer = config['ModelTrainer']
-
-        ModelTrainer.fit(x_train, y_train, epochs=config["epochs"])
-        model_weights = ModelTrainer.get_weights()
+        ModelTrainer.fit(model, x_train, y_train, epochs=config["epochs"])
+        model_weights = ModelTrainer.get_weights(model)
 
         # transform to a numpy array
         np_model_weights = np.asarray(model_weights, dtype=object)
@@ -94,9 +95,12 @@ class TestClient:
 
     def run_round(self, config, ModelTrainer):
         """DocString"""
-
         x_train, y_train = self.on_data_retrieve(config)
 
-        fit_results = self.on_model_fit(ModelTrainer, config, x_train, y_train)
+        model = ModelTrainer.create_model(config["architecture"])
+        ModelTrainer.compile_model(model)
+        ModelTrainer.set_weights(model, config["weights"])
+
+        fit_results = self.on_model_fit(model, ModelTrainer, config, x_train, y_train)
 
         return {"model_weights": fit_results, "samples_count": x_train.shape[0]}
