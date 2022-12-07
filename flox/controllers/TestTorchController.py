@@ -1,10 +1,10 @@
 import numpy as np
 from funcx import FuncXExecutor
 
-from flox.logic import FloxServerLogic
+from flox.logic import FloxControllerLogic
 
 
-class TestServer(FloxServerLogic):
+class TestTorchController(FloxControllerLogic):
     def __init__(
         self,
         endpoint_ids=None,
@@ -15,8 +15,7 @@ class TestServer(FloxServerLogic):
         global_model=None,
         ModelTrainer=None,
         path_dir=None,
-        x_test=None,
-        y_test=None,
+        testloader=None,
         data_source=None,
         dataset_name=None,
         preprocess=None,
@@ -29,8 +28,7 @@ class TestServer(FloxServerLogic):
         self.global_model = global_model
         self.ModelTrainer = ModelTrainer
         self.path_dir = path_dir
-        self.x_test = x_test
-        self.y_test = y_test
+        self.testloader = testloader
         self.data_source = data_source
         self.dataset_name = dataset_name
         self.preprocess = preprocess
@@ -46,8 +44,8 @@ class TestServer(FloxServerLogic):
     def on_model_broadcast(self):
         """DocString"""
         # get the model's architecture
-        model_architecture = self.ModelTrainer.get_architecture(self.global_model)
-        model_weights = self.ModelTrainer.get_weights(self.global_model)
+        # model_architecture = self.ModelTrainer.get_architecture(self.global_model)
+        # model_weights = self.ModelTrainer.get_weights(self.global_model)
 
         # define list storage for results
         tasks = []
@@ -63,8 +61,8 @@ class TestServer(FloxServerLogic):
                 "data_source": self.data_source,
                 "dataset_name": self.dataset_name,
                 "preprocess": self.preprocess,
-                "architecture": model_architecture,
-                "weights": model_weights,
+                # "architecture": model_architecture,
+                # "weights": model_weights,
             }
             with FuncXExecutor(endpoint_id=ep) as fx:
                 task = fx.submit(
@@ -85,6 +83,7 @@ class TestServer(FloxServerLogic):
 
         total = sum(samples_count)
         fractions = samples_count / total
+
         return {
             "model_weights": model_weights,
             "samples_count": samples_count,
@@ -101,10 +100,10 @@ class TestServer(FloxServerLogic):
 
     def on_model_update(self, updated_weights) -> None:
         """DocString"""
-        self.ModelTrainer.set_weights(self.global_model, updated_weights)
+        self.ModelTrainer.set_weights(updated_weights)
 
-    def on_model_evaluate(self, x_test, y_test):
-        results = self.ModelTrainer.evaluate(self.global_model, x_test, y_test)
+    def on_model_evaluate(self, testloader):
+        results = self.ModelTrainer.evaluate(testloader)
         print(results)
         return results
 
@@ -125,4 +124,4 @@ class TestServer(FloxServerLogic):
 
             # evaluate the model
             print(f"Round {i} evaluation results: ")
-            self.on_model_evaluate(self.x_test, self.y_test)
+            self.on_model_evaluate(self.testloader)

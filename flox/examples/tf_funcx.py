@@ -1,12 +1,11 @@
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 from tensorflow import keras
 
-from flox.clients.TestClient import TestClient
+from flox.clients.TestTensorflowClient import TestTensorflowClient
+from flox.controllers.TestTensorflowController import TestTensorflowController
 from flox.model_trainers.TensorflowTrainer import TensorflowTrainer
-from flox.servers.TestServer import TestServer
 from flox.utils import get_test_data
 
 
@@ -43,9 +42,9 @@ def main():
     x_test, y_test = get_test_data(keras_dataset="fashion_mnist", num_samples=2000)
 
     TFTrainer = TensorflowTrainer()
-    ClientLogic = TestClient()
+    ClientLogic = TestTensorflowClient()
 
-    FloxServer = TestServer(
+    FloxServer = TestTensorflowController(
         endpoint_ids=eps,
         num_samples=500,
         epochs=5,

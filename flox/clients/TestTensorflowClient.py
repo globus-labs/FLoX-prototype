@@ -1,7 +1,7 @@
 from flox.logic import FloxClientLogic
 
 
-class TestClient(FloxClientLogic):
+class TestTensorflowClient(FloxClientLogic):
     def on_model_receive():
         pass
 

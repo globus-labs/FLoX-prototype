@@ -1,34 +1,36 @@
 from collections import OrderedDict
 from typing import Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-import torchvision
-import torchvision.transforms as transforms
-from torch import Tensor
 
-import flox
 from flox.common import EvaluateRes, NDArray, NDArrays
 from flox.logic import BaseModelTrainer
 
 
 class PyTorchTrainer(BaseModelTrainer):
-    def __init__(self, model, criterion=nn.CrossEntropyLoss(), optimizer=None) -> None:
+    def __init__(
+        self, model, device=None, criterion=nn.CrossEntropyLoss(), optimizer=None
+    ) -> None:
         self.model = model
+        if not device:
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = device
+
         self.criterion = criterion
         if optimizer:
             self.optimizer = optimizer
         else:
             self.optimizer = optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
 
-    def fit(self, trainloader, device, epochs=10):
+    def fit(self, trainloader, config):
+        epochs = config["epochs"]
         for epoch in range(epochs):  # loop over the dataset multiple times
             running_loss = 0.0
             for i, data in enumerate(trainloader, 0):
-                images, labels = data[0].to(device), data[1].to(device)
+                images, labels = data[0].to(self.device), data[1].to(self.device)
 
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
@@ -47,14 +49,18 @@ class PyTorchTrainer(BaseModelTrainer):
                     )
                     running_loss = 0.0
 
-    def evaluate(self, testloader, device):
+        return self.get_weights()
+
+    def evaluate(self, testloader):
         """DocString"""
+        import torch
+
         correct = 0
         total = 0
         loss = 0.0
         with torch.no_grad():
             for data in testloader:
-                images, labels = data[0].to(device), data[1].to(device)
+                images, labels = data[0].to(self.device), data[1].to(self.device)
                 outputs = self.model(images)
                 loss += self.criterion(outputs, labels).item()
                 _, predicted = torch.max(outputs.data, 1)  # pylint: disable=no-member
@@ -68,6 +74,8 @@ class PyTorchTrainer(BaseModelTrainer):
         return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
 
     def set_weights(self, weights: NDArrays) -> None:
+        import torch
+
         state_dict = OrderedDict(
             {
                 k: torch.tensor(v)

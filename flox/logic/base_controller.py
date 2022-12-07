@@ -8,7 +8,7 @@ from flox.common import (
 )
 
 
-class FloxServerLogic:
+class FloxControllerLogic:
     def on_model_init(self) -> None:
         """DocString"""
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
