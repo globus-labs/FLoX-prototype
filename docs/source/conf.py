@@ -20,6 +20,10 @@ extensions = [
     "sphinx.ext.autosectionlabel",
 ]
 
+autosummary_generate = True  # Turn on sphinx.ext.autosummary
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ["_templates"]
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),

@@ -3,4 +3,6 @@ env
 *.npy
 build/
 pyflox.egg-info/
+data/
+dist/
 
