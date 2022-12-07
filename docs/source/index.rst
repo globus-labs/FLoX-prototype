@@ -10,14 +10,8 @@ and :doc:`install` to install the project.
 Contents
 --------
 
-.. autosummary::
-   :toctree: _autosummary
-   :template: custom-module-template.rst
-   :recursive:
-
-   flox
-
 .. toctree::
 
    install
    usage
+   API reference <_autosummary/flox>
