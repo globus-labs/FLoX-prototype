@@ -1,8 +1,9 @@
-============
-Quickstart Tensorflow Tutorial
-===========
+
+# Quickstart Tensorflow Tutorial
 
 This example is in development and includes only basic setup and execution instructions.
+
+### Controller instructions
 
 On your *Controller*, follow these instructions:
 
@@ -10,7 +11,7 @@ On your *Controller*, follow these instructions:
 
 2. Install FLoX with ``pip install -e .`` since the latest version of the library is not out yet.
 
-3. Install `Tensorflow 2.1.0: <https://www.tensorflow.org/install/pip>`_ ``pip install tensorflow==2.1.0``.
+3. Install [Tensorflow 2.1.0](https://www.tensorflow.org/install/pip>): ``pip install tensorflow==2.1.0``.
 Tensorflow Verstion between *Controller* and *Clients* need match.
 We use 2.1.0 because it's the version that was easily installable on our Rasperry Pi 4.
 
@@ -21,15 +22,16 @@ This step will be eliminated once the library is published on PyPI.
 
 6. Run ``python flox/examples/quickstart_tensorflow/tf_funcx.py``
 
+### Clients instructions
 
 On your *Clients*:
 1. Install the FLoX dependencies from the dist file you created on the Controller: ``pip install pyflox-0.1.5-py3-none-any.whl``
 
-2. Install `Tensorflow 2.1.0 <https://qengineering.eu/install-tensorflow-2.1.0-on-raspberry-pi-4.html>`_
+2. Install [Tensorflow 2.1.0](https://qengineering.eu/install-tensorflow-2.1.0-on-raspberry-pi-4.html>)
 
 3. Install ``funcx-endpoint`` with ``pip install funcx-endpoint``
 
 4. Configure (``funcx-endpoint configure ep1``) and start (``funcx-endpoint start ep1``) an endpoint.
 
-5. Paste the endpoint's id (``funcx-endpoint list``) and paste it into ``pytorch_funcx.py`` on the *Controller* at the endpoint defintion line
+5. Paste the endpoint's id (``funcx-endpoint list``) and paste it into ``pytorch_funcx.py`` on the *Controller* at the endpoint definition line
 
