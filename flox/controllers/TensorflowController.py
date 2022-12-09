@@ -1,10 +1,10 @@
 import numpy as np
 from funcx import FuncXExecutor
 
-from flox.logic import FloxServerLogic
+from flox.logic import FloxControllerLogic
 
 
-class TestServer(FloxServerLogic):
+class TensorflowController(FloxControllerLogic):
     def __init__(
         self,
         endpoint_ids=None,
@@ -44,7 +44,6 @@ class TestServer(FloxServerLogic):
             self.epochs = [self.epochs] * len(self.endpoint_ids)
 
     def on_model_broadcast(self):
-        """DocString"""
         # get the model's architecture
         model_architecture = self.ModelTrainer.get_architecture(self.global_model)
         model_weights = self.ModelTrainer.get_weights(self.global_model)
@@ -78,7 +77,6 @@ class TestServer(FloxServerLogic):
         return tasks
 
     def on_model_receive(self, tasks):
-        """DocString"""
         # extract model updates from each endpoints once they are available
         model_weights = [t.result()["model_weights"] for t in tasks]
         samples_count = np.array([t.result()["samples_count"] for t in tasks])
@@ -92,7 +90,6 @@ class TestServer(FloxServerLogic):
         }
 
     def on_model_aggregate(self, results):
-        """DocString"""
         average_weights = np.average(
             results["model_weights"], weights=results["bias_weights"], axis=0
         )
@@ -100,7 +97,6 @@ class TestServer(FloxServerLogic):
         return average_weights
 
     def on_model_update(self, updated_weights) -> None:
-        """DocString"""
         self.ModelTrainer.set_weights(self.global_model, updated_weights)
 
     def on_model_evaluate(self, x_test, y_test):
@@ -117,6 +113,7 @@ class TestServer(FloxServerLogic):
 
             # process & decrypt the results
             results = self.on_model_receive(tasks)
+
             # aggregate the weights
             updated_weights = self.on_model_aggregate(results)
 

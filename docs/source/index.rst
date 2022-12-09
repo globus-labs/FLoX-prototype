@@ -11,7 +11,9 @@ Contents
 --------
 
 .. toctree::
+   :hidden:
 
-   install
+   Home page <self>
    usage
+   install
    API reference <_autosummary/flox>

@@ -1,12 +1,9 @@
-from .typing import AggregateIns as AggregateIns
-from .typing import AggregateRes as AggregateRes
-from .typing import BroadcastRes as BroadcastRes
 from .typing import ConfigFile as ConfigFile
 from .typing import EvaluateRes as EvaluateRes
 from .typing import FitIns as FitIns
+from .typing import FuturesList as FuturesList
 from .typing import NDArray as NDArray
 from .typing import NDArrays as NDArrays
-from .typing import ReceiveIns as ReceiveIns
-from .typing import ReceiveRes as ReceiveRes
+from .typing import ResultsList as ResultsList
 from .typing import UpdateIns as UpdateIns
 from .typing import XYData as XYData
