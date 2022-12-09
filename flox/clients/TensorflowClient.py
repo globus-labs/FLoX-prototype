@@ -1,7 +1,7 @@
 from flox.logic import FloxClientLogic
 
 
-class TestTensorflowClient(FloxClientLogic):
+class TensorflowClient(FloxClientLogic):
     def on_model_receive():
         pass
 
@@ -73,13 +73,12 @@ class TestTensorflowClient(FloxClientLogic):
 
         return x_train, y_train
 
-    def on_data_prepare():
-        """DocString"""
-        pass
-
-    def on_model_fit(self, model, ModelTrainer, config, x_train, y_train):
-        """DocString"""
+    def on_model_fit(self, ModelTrainer, config, x_train, y_train):
         import numpy as np
+
+        model = ModelTrainer.create_model(config["architecture"])
+        ModelTrainer.compile_model(model)
+        ModelTrainer.set_weights(model, config["weights"])
 
         ModelTrainer.fit(model, x_train, y_train, epochs=config["epochs"])
         model_weights = ModelTrainer.get_weights(model)
@@ -90,17 +89,11 @@ class TestTensorflowClient(FloxClientLogic):
         return np_model_weights
 
     def on_model_send():
-        """DocString"""
         pass
 
     def run_round(self, config, ModelTrainer):
-        """DocString"""
         x_train, y_train = self.on_data_retrieve(config)
 
-        model = ModelTrainer.create_model(config["architecture"])
-        ModelTrainer.compile_model(model)
-        ModelTrainer.set_weights(model, config["weights"])
-
-        fit_results = self.on_model_fit(model, ModelTrainer, config, x_train, y_train)
+        fit_results = self.on_model_fit(ModelTrainer, config, x_train, y_train)
 
         return {"model_weights": fit_results, "samples_count": x_train.shape[0]}

@@ -3,8 +3,8 @@ import os
 import tensorflow as tf
 from tensorflow import keras
 
-from flox.clients.TestTensorflowClient import TestTensorflowClient
-from flox.controllers.TestTensorflowController import TestTensorflowController
+from flox.clients.TensorflowClient import TensorflowClient
+from flox.controllers.TensorflowController import TensorflowController
 from flox.model_trainers.TensorflowTrainer import TensorflowTrainer
 from flox.utils import get_test_data
 
@@ -42,9 +42,9 @@ def main():
     x_test, y_test = get_test_data(keras_dataset="fashion_mnist", num_samples=2000)
 
     TFTrainer = TensorflowTrainer()
-    ClientLogic = TestTensorflowClient()
+    ClientLogic = TensorflowClient()
 
-    FloxServer = TestTensorflowController(
+    FloxServer = TensorflowController(
         endpoint_ids=eps,
         num_samples=500,
         epochs=5,

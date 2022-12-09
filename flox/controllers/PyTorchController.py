@@ -4,7 +4,7 @@ from funcx import FuncXExecutor
 from flox.logic import FloxControllerLogic
 
 
-class TestTensorflowController(FloxControllerLogic):
+class PyTorchController(FloxControllerLogic):
     def __init__(
         self,
         endpoint_ids=None,
@@ -15,9 +15,7 @@ class TestTensorflowController(FloxControllerLogic):
         global_model=None,
         ModelTrainer=None,
         path_dir=None,
-        x_test=None,
-        y_test=None,
-        data_source=None,
+        testloader=None,
         dataset_name=None,
         preprocess=None,
     ):
@@ -29,9 +27,7 @@ class TestTensorflowController(FloxControllerLogic):
         self.global_model = global_model
         self.ModelTrainer = ModelTrainer
         self.path_dir = path_dir
-        self.x_test = x_test
-        self.y_test = y_test
-        self.data_source = data_source
+        self.testloader = testloader
         self.dataset_name = dataset_name
         self.preprocess = preprocess
 
@@ -44,11 +40,6 @@ class TestTensorflowController(FloxControllerLogic):
             self.epochs = [self.epochs] * len(self.endpoint_ids)
 
     def on_model_broadcast(self):
-        """DocString"""
-        # get the model's architecture
-        model_architecture = self.ModelTrainer.get_architecture(self.global_model)
-        model_weights = self.ModelTrainer.get_weights(self.global_model)
-
         # define list storage for results
         tasks = []
 
@@ -60,11 +51,8 @@ class TestTensorflowController(FloxControllerLogic):
                 "num_samples": num_s,
                 "epochs": num_epoch,
                 "path_dir": path_d,
-                "data_source": self.data_source,
                 "dataset_name": self.dataset_name,
                 "preprocess": self.preprocess,
-                "architecture": model_architecture,
-                "weights": model_weights,
             }
             with FuncXExecutor(endpoint_id=ep) as fx:
                 task = fx.submit(
@@ -78,13 +66,13 @@ class TestTensorflowController(FloxControllerLogic):
         return tasks
 
     def on_model_receive(self, tasks):
-        """DocString"""
         # extract model updates from each endpoints once they are available
         model_weights = [t.result()["model_weights"] for t in tasks]
         samples_count = np.array([t.result()["samples_count"] for t in tasks])
 
         total = sum(samples_count)
         fractions = samples_count / total
+
         return {
             "model_weights": model_weights,
             "samples_count": samples_count,
@@ -92,7 +80,6 @@ class TestTensorflowController(FloxControllerLogic):
         }
 
     def on_model_aggregate(self, results):
-        """DocString"""
         average_weights = np.average(
             results["model_weights"], weights=results["bias_weights"], axis=0
         )
@@ -100,11 +87,10 @@ class TestTensorflowController(FloxControllerLogic):
         return average_weights
 
     def on_model_update(self, updated_weights) -> None:
-        """DocString"""
-        self.ModelTrainer.set_weights(self.global_model, updated_weights)
+        self.ModelTrainer.set_weights(updated_weights)
 
-    def on_model_evaluate(self, x_test, y_test):
-        results = self.ModelTrainer.evaluate(self.global_model, x_test, y_test)
+    def on_model_evaluate(self, testloader):
+        results = self.ModelTrainer.evaluate(testloader)
         print(results)
         return results
 
@@ -117,6 +103,7 @@ class TestTensorflowController(FloxControllerLogic):
 
             # process & decrypt the results
             results = self.on_model_receive(tasks)
+
             # aggregate the weights
             updated_weights = self.on_model_aggregate(results)
 
@@ -125,4 +112,4 @@ class TestTensorflowController(FloxControllerLogic):
 
             # evaluate the model
             print(f"Round {i} evaluation results: ")
-            self.on_model_evaluate(self.x_test, self.y_test)
+            self.on_model_evaluate(self.testloader)

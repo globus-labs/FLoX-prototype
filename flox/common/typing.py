@@ -20,38 +20,22 @@ class EvaluateRes:
 
 
 @dataclass
-class BroadcastRes:
-    """Response from on_model_broadcast.
-    If using FuncXExecutor, this would most likely be a list of futures
-    funcX returnds after you submit functions to endpoints"""
+class FuturesList:
+    """List of futures. If using FuncXExecutor, this would most likely be a list of futures
+    funcX returns after you submit functions to endpoints"""
 
     tasks: List[Any]
 
 
 @dataclass
-class AggregateIns:
-    """List of inputs for on_model_aggregate"""
-
-    results: Dict[str, Scalar]
-
-
-@dataclass
-class AggregateRes:
-    """Response from on_model_aggregate"""
-
-    new_weights: NDArrays
-
-
-@dataclass
-class ReceiveIns:
-    """List of inputs for on_model_receive"""
-
-    tasks: List[Any]
-
-
-@dataclass
-class ReceiveRes:
-    """Results from on_model_receive"""
+class ResultsList:
+    """FL results extracted from FuturesList, formatted as a dictionary. For example:
+    ResultsList = {
+        "model_weights": model_weights,
+        "samples_count": samples_count,
+        "bias_weights": fractions,
+    }
+    """
 
     results: Dict[str, Scalar]
 
@@ -82,6 +66,7 @@ class XYData:
 class FitIns:
     """Parameters for fitting the model"""
 
+    model: Any
     ModelTrainer: Any
     config: ConfigFile
     x_train: NDArrays

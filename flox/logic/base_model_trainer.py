@@ -1,28 +1,43 @@
+from flox.common import NDArrays
+
+
 class BaseModelTrainer:
-    def fit(self):
-        """DocString"""
+    """Abstract base class for FLoX ML model trainers"""
+
+    def fit(self) -> NDArrays:
+        """Fits the model using training data
+
+        Returns
+        ----------
+        NDArrays
+            the new model weights in the Numpy array form
+
+        """
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
     def evaluate(self):
-        """DocString"""
+        """Evaluates the model using testing data"""
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def get_weights(self):
-        """DocString"""
+    def get_weights(self) -> NDArrays:
+        """Returns the weights of the model as a Numpy array
+
+
+        Returns
+        -------
+        NDArrays
+            the model's weights as Numpy arrays
+
+        """
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def set_weights(self):
-        """DocString"""
+    def set_weights(self, new_weights: NDArrays) -> None:
+        """Sets the model's weights to the new weights
+
+        Parameters
+        ----------
+        new_weights: NDArrays
+            new model weights in the Numpy array form
+
+        """
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
-
-    # def create_model(self):
-    #     """DocString"""
-    #     raise NotImplementedError('Abstract class method. Cannot be called directly.')
-
-    # def compile_model(self):
-    #     """DocString"""
-    #     raise NotImplementedError('Abstract class method. Cannot be called directly.')
-
-    # def get_architecture(self):
-    #     """DocString"""
-    #     raise NotImplementedError('Abstract class method. Cannot be called directly.')

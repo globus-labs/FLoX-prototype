@@ -1,15 +1,17 @@
+"""PyTorch ML ModelTrainer Class"""
 from collections import OrderedDict
-from typing import Tuple
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from flox.common import EvaluateRes, NDArray, NDArrays
+from flox.common import EvaluateRes, NDArrays
 from flox.logic import BaseModelTrainer
 
 
 class PyTorchTrainer(BaseModelTrainer):
+    """PyTorch ML ModelTrainer Class"""
+
     def __init__(
         self, model, device=None, criterion=nn.CrossEntropyLoss(), optimizer=None
     ) -> None:
@@ -52,7 +54,6 @@ class PyTorchTrainer(BaseModelTrainer):
         return self.get_weights()
 
     def evaluate(self, testloader):
-        """DocString"""
         import torch
 
         correct = 0
@@ -83,18 +84,6 @@ class PyTorchTrainer(BaseModelTrainer):
             }
         )
         self.model.load_state_dict(state_dict, strict=True)
-
-    def create_model(self):
-        """DocString"""
-        pass
-
-    def compile_model(self):
-        """DocString"""
-        pass
-
-    def get_architecture(self):
-        """DocString"""
-        pass
 
     # def create_dataloader(self, x_data, y_data, batch_size=4, shuffle=True) -> torch.utils.data.DataLoader:
     #     combined_data = torch.hstack((x_data, y_data))
