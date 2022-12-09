@@ -11,7 +11,6 @@ Contents
 --------
 
 .. toctree::
-   :hidden:
 
    Home page <self>
    usage
