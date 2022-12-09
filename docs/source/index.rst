@@ -16,4 +16,4 @@ Contents
    Home page <self>
    usage
    install
-   API reference <_autosummary/flox>
+   logic
