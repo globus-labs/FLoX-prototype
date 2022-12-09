@@ -12,7 +12,7 @@ Contents
 
 .. toctree::
 
-   Home page <self>
+   Homepage <self>
    usage
    install
    logic

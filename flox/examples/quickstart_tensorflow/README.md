@@ -27,7 +27,7 @@ This step will be eliminated once the library is published on PyPI.
 On your *Clients*:
 1. Install the FLoX dependencies from the dist file you created on the Controller: ``pip install pyflox-0.1.5-py3-none-any.whl``
 
-2. Install [Tensorflow 2.1.0](https://qengineering.eu/install-tensorflow-2.1.0-on-raspberry-pi-4.html>)
+2. Install [Tensorflow 2.1.0](https://qengineering.eu/install-tensorflow-2.1.0-on-raspberry-pi-4.html)
 
 3. Install ``funcx-endpoint`` with ``pip install funcx-endpoint``
 

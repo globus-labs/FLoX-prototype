@@ -1,3 +1,5 @@
+.. _logic:
+
 FLoX Client-Controller Logic
 ============================
 
