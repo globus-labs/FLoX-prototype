@@ -11,9 +11,9 @@ class TensorflowController(FloxControllerLogic):
         num_samples=None,
         epochs=None,
         rounds=None,
-        ClientLogic=None,
+        client_logic=None,
         global_model=None,
-        ModelTrainer=None,
+        model_trainer=None,
         path_dir=None,
         x_test=None,
         y_test=None,
@@ -25,9 +25,9 @@ class TensorflowController(FloxControllerLogic):
         self.num_samples = num_samples
         self.epochs = epochs
         self.rounds = rounds
-        self.ClientLogic = ClientLogic
+        self.ClientLogic = client_logic
         self.global_model = global_model
-        self.ModelTrainer = ModelTrainer
+        self.ModelTrainer = model_trainer
         self.path_dir = path_dir
         self.x_test = x_test
         self.y_test = y_test

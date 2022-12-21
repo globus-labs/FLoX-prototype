@@ -1,3 +1,4 @@
+"""Abstract Base Class for FLoX Model Trainers"""
 from flox.common import NDArrays
 
 

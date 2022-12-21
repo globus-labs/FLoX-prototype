@@ -8,3 +8,4 @@ dist/
 data/
 
 *.pyc
+.vscode/settings.json

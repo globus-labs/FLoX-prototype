@@ -1,3 +1,4 @@
+"""Abstract Base Class for FLoX Clients"""
 from flox.common import ConfigFile, FitIns, NDArrays, ResultsList, XYData
 
 
