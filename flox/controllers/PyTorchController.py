@@ -11,9 +11,9 @@ class PyTorchController(FloxControllerLogic):
         num_samples=None,
         epochs=None,
         rounds=None,
-        ClientLogic=None,
+        client_logic=None,
         global_model=None,
-        ModelTrainer=None,
+        model_trainer=None,
         path_dir=None,
         testloader=None,
         dataset_name=None,
@@ -23,9 +23,9 @@ class PyTorchController(FloxControllerLogic):
         self.num_samples = num_samples
         self.epochs = epochs
         self.rounds = rounds
-        self.ClientLogic = ClientLogic
+        self.client_logic = client_logic
         self.global_model = global_model
-        self.ModelTrainer = ModelTrainer
+        self.model_trainer = model_trainer
         self.path_dir = path_dir
         self.testloader = testloader
         self.dataset_name = dataset_name
@@ -56,10 +56,10 @@ class PyTorchController(FloxControllerLogic):
             }
             with FuncXExecutor(endpoint_id=ep) as fx:
                 task = fx.submit(
-                    self.ClientLogic.run_round,
-                    self.ClientLogic,
+                    self.client_logic.run_round,
+                    self.client_logic,
                     config,
-                    self.ModelTrainer,
+                    self.model_trainer,
                 )
                 tasks.append(task)
 
@@ -87,10 +87,10 @@ class PyTorchController(FloxControllerLogic):
         return average_weights
 
     def on_model_update(self, updated_weights) -> None:
-        self.ModelTrainer.set_weights(updated_weights)
+        self.model_trainer.set_weights(updated_weights)
 
     def on_model_evaluate(self, testloader):
-        results = self.ModelTrainer.evaluate(testloader)
+        results = self.model_trainer.evaluate(testloader)
         print(results)
         return results
 
