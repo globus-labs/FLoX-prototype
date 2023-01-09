@@ -2,7 +2,7 @@ from flox.logic import FloxClientLogic
 
 
 class TensorflowClient(FloxClientLogic):
-    def on_model_receive():
+    def on_model_receive(self):
         pass
 
     def on_data_retrieve(self, config):
@@ -88,7 +88,7 @@ class TensorflowClient(FloxClientLogic):
 
         return np_model_weights
 
-    def on_model_send():
+    def on_model_send(self):
         pass
 
     def run_round(self, config, ModelTrainer):

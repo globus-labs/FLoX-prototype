@@ -1,14 +1,11 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 import torchvision
-import torchvision.transforms as transforms
-from torch import Tensor
 
-from flox.clients.PyTorchClient import PyTorchClient
-from flox.controllers.PyTorchController import PyTorchController
-from flox.model_trainers.PyTorchTrainer import PyTorchTrainer
+from flox.clients.PyTorchClientLocal import PyTorchClientLocal
+from flox.controllers.PyTorch_local_controller import PyTorchControllerLocal
+
+# from flox.model_trainers.PyTorchTrainerLocal import PyTorchTrainerLocal
 
 
 def get_test_data(config):
@@ -42,7 +39,7 @@ def get_test_data(config):
         train_subpart, batch_size=batch_size, shuffle=True, num_workers=num_workers
     )
 
-    # create test DataLoader
+    # create train DataLoader
     testset = dataset_name(root=root, train=False, download=True, transform=transform)
     test_split_len = (
         len(trainset) if "num_samples" not in config.keys() else config["num_samples"]
@@ -81,8 +78,14 @@ def main():
             return x
 
     net = Net()
-    torch_trainer = PyTorchTrainer(net)
-    client_logic = PyTorchClient()
+
+    class kek:
+        def __init__(self):
+            self.var = "VAR"
+
+    kek_instance = kek()
+    # torch_trainer = PyTorchTrainerLocal(net)
+    client_logic = PyTorchClientLocal(model=kek_instance, optimizer="OPTIMUS_PRIME")
 
     data_config = {
         "num_samples": 1000,
@@ -97,13 +100,12 @@ def main():
     eps = [ep1]
     print(f"Endpoints: {eps}")
 
-    FloxServer = PyTorchController(
+    FloxServer = PyTorchControllerLocal(
         endpoint_ids=eps,
         num_samples=100,
         epochs=1,
         rounds=1,
         client_logic=client_logic,
-        model_trainer=torch_trainer,
         path_dir=["."],
         testloader=testloader,
         dataset_name=torchvision.datasets.FashionMNIST,

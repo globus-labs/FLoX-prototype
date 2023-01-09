@@ -1,3 +1,4 @@
+"""Abstract Base Class for FLoX Controllers"""
 from flox.common import EvaluateRes, FuturesList, NDArrays, ResultsList
 
 

@@ -11,9 +11,9 @@ class TensorflowController(FloxControllerLogic):
         num_samples=None,
         epochs=None,
         rounds=None,
-        ClientLogic=None,
+        client_logic=None,
         global_model=None,
-        ModelTrainer=None,
+        model_trainer=None,
         path_dir=None,
         x_test=None,
         y_test=None,
@@ -25,9 +25,9 @@ class TensorflowController(FloxControllerLogic):
         self.num_samples = num_samples
         self.epochs = epochs
         self.rounds = rounds
-        self.ClientLogic = ClientLogic
+        self.client_logic = client_logic
         self.global_model = global_model
-        self.ModelTrainer = ModelTrainer
+        self.model_trainer = model_trainer
         self.path_dir = path_dir
         self.x_test = x_test
         self.y_test = y_test
@@ -45,8 +45,8 @@ class TensorflowController(FloxControllerLogic):
 
     def on_model_broadcast(self):
         # get the model's architecture
-        model_architecture = self.ModelTrainer.get_architecture(self.global_model)
-        model_weights = self.ModelTrainer.get_weights(self.global_model)
+        model_architecture = self.model_trainer.get_architecture(self.global_model)
+        model_weights = self.model_trainer.get_weights(self.global_model)
 
         # define list storage for results
         tasks = []
@@ -67,10 +67,10 @@ class TensorflowController(FloxControllerLogic):
             }
             with FuncXExecutor(endpoint_id=ep) as fx:
                 task = fx.submit(
-                    self.ClientLogic.run_round,
-                    self.ClientLogic,
+                    self.client_logic.run_round,
+                    self.client_logic,
                     config,
-                    self.ModelTrainer,
+                    self.model_trainer,
                 )
                 tasks.append(task)
 
@@ -97,10 +97,10 @@ class TensorflowController(FloxControllerLogic):
         return average_weights
 
     def on_model_update(self, updated_weights) -> None:
-        self.ModelTrainer.set_weights(self.global_model, updated_weights)
+        self.model_trainer.set_weights(self.global_model, updated_weights)
 
     def on_model_evaluate(self, x_test, y_test):
-        results = self.ModelTrainer.evaluate(self.global_model, x_test, y_test)
+        results = self.model_trainer.evaluate(self.global_model, x_test, y_test)
         print(results)
         return results
 

@@ -1,9 +1,11 @@
-from .typing import ConfigFile as ConfigFile
-from .typing import EvaluateRes as EvaluateRes
-from .typing import FitIns as FitIns
-from .typing import FuturesList as FuturesList
-from .typing import NDArray as NDArray
-from .typing import NDArrays as NDArrays
-from .typing import ResultsList as ResultsList
-from .typing import UpdateIns as UpdateIns
-from .typing import XYData as XYData
+from .typing import (
+    ConfigFile,
+    EvaluateRes,
+    FitIns,
+    FuturesList,
+    NDArray,
+    NDArrays,
+    ResultsList,
+    UpdateIns,
+    XYData,
+)
