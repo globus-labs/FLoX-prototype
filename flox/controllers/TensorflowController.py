@@ -20,6 +20,9 @@ class TensorflowController(FloxControllerLogic):
         data_source=None,
         dataset_name=None,
         preprocess=None,
+        x_train_filename=None,
+        y_train_filename=None,
+        input_shape=None,
     ):
         self.endpoint_ids = endpoint_ids
         self.num_samples = num_samples
@@ -34,6 +37,9 @@ class TensorflowController(FloxControllerLogic):
         self.data_source = data_source
         self.dataset_name = dataset_name
         self.preprocess = preprocess
+        self.x_train_filename = x_train_filename
+        self.y_train_filename = y_train_filename
+        self.input_shape = input_shape
 
     def on_model_init(self):
         # if num_samples or epochs is an int, convert to list so the same number can be applied to all endpoints
@@ -42,6 +48,9 @@ class TensorflowController(FloxControllerLogic):
 
         if type(self.epochs) == int:
             self.epochs = [self.epochs] * len(self.endpoint_ids)
+
+        if type(self.path_dir) == str:
+            self.path_dir = [self.path_dir] * len(self.endpoint_ids)
 
     def on_model_broadcast(self):
         # get the model's architecture
@@ -64,6 +73,9 @@ class TensorflowController(FloxControllerLogic):
                 "preprocess": self.preprocess,
                 "architecture": model_architecture,
                 "weights": model_weights,
+                "x_train_filename": self.x_train_filename,
+                "y_train_filename": self.y_train_filename,
+                "input_shape": self.input_shape,
             }
             with FuncXExecutor(endpoint_id=ep) as fx:
                 task = fx.submit(
@@ -100,9 +112,13 @@ class TensorflowController(FloxControllerLogic):
         self.model_trainer.set_weights(self.global_model, updated_weights)
 
     def on_model_evaluate(self, x_test, y_test):
-        results = self.model_trainer.evaluate(self.global_model, x_test, y_test)
-        print(results)
-        return results
+        if x_test is not None and y_test is not None:
+            results = self.model_trainer.evaluate(self.global_model, x_test, y_test)
+            print(results)
+            return results
+        else:
+            print("Skipping evaluation, no x_test and/or y_test provided")
+            return False
 
     def run_federated_learning(self):
         self.on_model_init()

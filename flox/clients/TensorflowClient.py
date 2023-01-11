@@ -6,6 +6,8 @@ class TensorflowClient(FloxClientLogic):
         pass
 
     def on_data_retrieve(self, config):
+        import os
+
         import numpy as np
         from tensorflow import keras
 
@@ -67,6 +69,43 @@ class TensorflowClient(FloxClientLogic):
                             num_classes = 10
 
                         y_train = keras.utils.to_categorical(y_train, num_classes)
+
+        elif config["data_source"] == "local":
+            # construct the path
+            x_train_path_file = os.sep.join(
+                [config["path_dir"], config["x_train_filename"]]
+            )
+            y_train_path_file = os.sep.join(
+                [config["path_dir"], config["y_train_filename"]]
+            )
+
+            # load the files
+            with open(x_train_path_file, "rb") as f:
+                x_train = np.load(f)
+
+            with open(y_train_path_file, "rb") as f:
+                y_train = np.load(f)
+
+            # if preprocess is True & the function is valid, preprocess the data
+            if config["preprocess"]:
+                # check if a valid function was given
+                depth = config["input_shape"][3]
+                image_size_y = config["input_shape"][2]
+                image_size_x = config["input_shape"][1]
+
+                # take a limited number of samples, if indicated
+                if config["num_samples"]:
+                    idx = np.random.choice(
+                        np.arange(len(x_train)), config["num_samples"], replace=True
+                    )
+                    x_train = x_train[idx]
+                    y_train = y_train[idx]
+
+                # reshape and scale to pixel values to 0-1
+                x_train = x_train.reshape(
+                    len(x_train), image_size_x, image_size_y, depth
+                )
+                x_train = x_train / 255.0
 
         else:
             raise Exception("Please choose one of data sources: ['local', 'keras']")
