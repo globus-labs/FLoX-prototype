@@ -1,5 +1,8 @@
+import time
+from collections import deque
+
 import numpy as np
-from funcx import FuncXExecutor
+from funcx import FuncXClient
 
 from flox.logic import FloxControllerLogic
 
@@ -23,6 +26,7 @@ class TensorflowController(FloxControllerLogic):
         x_train_filename=None,
         y_train_filename=None,
         input_shape=None,
+        timeout=None,
     ):
         self.endpoint_ids = endpoint_ids
         self.num_samples = num_samples
@@ -40,6 +44,7 @@ class TensorflowController(FloxControllerLogic):
         self.x_train_filename = x_train_filename
         self.y_train_filename = y_train_filename
         self.input_shape = input_shape
+        self.timeout = timeout
 
     def on_model_init(self):
         # if num_samples or epochs is an int, convert to list so the same number can be applied to all endpoints
@@ -52,47 +57,86 @@ class TensorflowController(FloxControllerLogic):
         if type(self.path_dir) == str:
             self.path_dir = [self.path_dir] * len(self.endpoint_ids)
 
+        if not self.timeout:
+            self.timeout = 60
+
+        self.funcx_client = FuncXClient(http_timeout=60)
+
     def on_model_broadcast(self):
         # get the model's architecture
         model_architecture = self.model_trainer.get_architecture(self.global_model)
         model_weights = self.model_trainer.get_weights(self.global_model)
 
         # define list storage for results
-        tasks = []
+        tasks = deque()
+
+        # registr the function
+        function_id = self.funcx_client.register_function(self.client_logic.run_round)
 
         # submit the corresponding parameters to each endpoint for a round of FL
         for ep, num_s, num_epoch, path_d in zip(
             self.endpoint_ids, self.num_samples, self.epochs, self.path_dir
         ):
-            config = {
-                "num_samples": num_s,
-                "epochs": num_epoch,
-                "path_dir": path_d,
-                "data_source": self.data_source,
-                "dataset_name": self.dataset_name,
-                "preprocess": self.preprocess,
-                "architecture": model_architecture,
-                "weights": model_weights,
-                "x_train_filename": self.x_train_filename,
-                "y_train_filename": self.y_train_filename,
-                "input_shape": self.input_shape,
-            }
-            with FuncXExecutor(endpoint_id=ep) as fx:
-                task = fx.submit(
-                    self.client_logic.run_round,
+            try:
+                ep_status = self.funcx_client.get_endpoint_status(ep)["status"]
+            except Exception as exp:
+                print(
+                    f"Could not check the status of the endpoint {ep}, the error is: {exp}"
+                )
+                ep_status = "error"
+
+            if ep_status != "online":
+                print(f"Endpoint {ep} is not online, it's {ep_status}!")
+            else:
+                config = {
+                    "num_samples": num_s,
+                    "epochs": num_epoch,
+                    "path_dir": path_d,
+                    "data_source": self.data_source,
+                    "dataset_name": self.dataset_name,
+                    "preprocess": self.preprocess,
+                    "architecture": model_architecture,
+                    "weights": model_weights,
+                    "x_train_filename": self.x_train_filename,
+                    "y_train_filename": self.y_train_filename,
+                    "input_shape": self.input_shape,
+                }
+
+                task = self.funcx_client.run(
                     self.client_logic,
                     config,
                     self.model_trainer,
+                    endpoint_id=ep,
+                    function_id=function_id,
                 )
                 tasks.append(task)
+
+            self.task_start_time = (
+                time.time()
+            )  # how would this work for multiple endpoints?
+
+            if len(tasks) == 0:
+                raise ValueError(
+                    f"The tasks queue is empty, no tasks were submitted for training!"
+                )
 
         return tasks
 
     def on_model_receive(self, tasks):
         # extract model updates from each endpoints once they are available
-        model_weights = [t.result()["model_weights"] for t in tasks]
-        samples_count = np.array([t.result()["samples_count"] for t in tasks])
+        model_weights = []
+        samples_count = []
 
+        while tasks and (time.time() - self.task_start_time) < self.timeout:
+            t = tasks.popleft()
+            if self.funcx_client.get_task(t)["status"] == "success":
+                res = self.funcx_client.get_result(t)
+                model_weights.append(res["model_weights"])
+                samples_count.append(res["samples_count"])
+            else:
+                tasks.append(t)
+
+        samples_count = np.array(samples_count)
         total = sum(samples_count)
         fractions = samples_count / total
         return {

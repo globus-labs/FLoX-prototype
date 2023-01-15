@@ -12,8 +12,9 @@ from flox.utils import get_test_data
 def main():
 
     # ep1 = "fe49ba41-9654-4d1b-8266-fd2f8197b242"
-    ep1 = "ef588445-ce77-4839-ac9b-646465f872ee"
-    eps = [ep1]
+    ep1 = "d917e715-bafa-466c-b12b-b9ce8e251257"
+    ep2 = "c4d406f9-5f15-4d83-93be-67ab5a3e545b"
+    eps = [ep1, ep2]
     print(f"Endpoints: {eps}")
 
     # `fashion_mnist` images are grayscale, 28 x 28 pixels in size
@@ -46,18 +47,19 @@ def main():
 
     FloxServer = TensorflowController(
         endpoint_ids=eps,
-        num_samples=500,
+        num_samples=2000,
         epochs=5,
-        rounds=7,
+        rounds=3,
         client_logic=ClientLogic,
         global_model=global_model,
         model_trainer=TFTrainer,
-        path_dir=["."],
+        path_dir=".",
         x_test=x_test,
         y_test=y_test,
         data_source="keras",
         dataset_name="fashion_mnist",
         preprocess=True,
+        timeout=60,
     )
 
     print("STARTING FL FLOW...")

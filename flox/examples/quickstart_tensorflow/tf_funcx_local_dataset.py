@@ -31,8 +31,8 @@ def process_data(train_image, train_label, num_samples=None):
 
 def main():
 
-    # ep1 = "fe49ba41-9654-4d1b-8266-fd2f8197b242"
-    ep1 = "68e4332b-e0dd-4933-a2f9-a3d7039764f6"
+    # ep1 = "fe49ba41-9654-4d1b-8266-fd2f8197b242sgsdg"
+    ep1 = "d917e715-bafa-466c-b12b-b9ce8e251257"
     eps = [ep1]
     print(f"Endpoints: {eps}")
 
@@ -72,9 +72,9 @@ def main():
 
     FloxServer = TensorflowController(
         endpoint_ids=eps,
-        num_samples=500,
-        epochs=5,
-        rounds=3,
+        num_samples=200,
+        epochs=1,
+        rounds=1,
         client_logic=ClientLogic,
         global_model=global_model,
         model_trainer=TFTrainer,
@@ -86,6 +86,7 @@ def main():
         preprocess=True,
         x_test=x_test,
         y_test=y_test,
+        timeout=5,
     )
 
     print("STARTING FL FLOW...")
