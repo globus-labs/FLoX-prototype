@@ -62,6 +62,8 @@ class MainController(FloxControllerLogic):
 
         self.funcx_client = FuncXClient(http_timeout=60)
 
+        self.endpoints_statuses = {}
+
     def create_config():
         pass
 
@@ -87,6 +89,7 @@ class MainController(FloxControllerLogic):
             if ep_status != "online":
                 print(f"Endpoint {ep} is not online, it's {ep_status}!")
             else:
+                self.endpoints_statuses[ep] = ep_status
                 config = self.create_config(num_s, num_epoch, path_d)
 
                 task = self.funcx_client.run(
@@ -103,6 +106,7 @@ class MainController(FloxControllerLogic):
             )  # how would this work for multiple endpoints?
 
             if len(tasks) == 0:
+                print(self.endpoints_statuses)
                 raise ValueError(
                     f"The tasks queue is empty, no tasks were submitted for training!"
                 )
@@ -113,6 +117,7 @@ class MainController(FloxControllerLogic):
         # extract model updates from each endpoints once they are available
         model_weights = []
         samples_count = []
+        retrieved_endpoint_order = []
 
         while tasks and (time.time() - self.task_start_time) < self.timeout:
             t = tasks.popleft()
@@ -120,6 +125,7 @@ class MainController(FloxControllerLogic):
                 res = self.funcx_client.get_result(t)
                 model_weights.append(res["model_weights"])
                 samples_count.append(res["samples_count"])
+                retrieved_endpoint_order.append(t)
             else:
                 tasks.append(t)
 
@@ -130,6 +136,7 @@ class MainController(FloxControllerLogic):
             "model_weights": model_weights,
             "samples_count": samples_count,
             "bias_weights": fractions,
+            "retrieved_endpoint_order": retrieved_endpoint_order,
         }
 
     def on_model_aggregate(self, results):
