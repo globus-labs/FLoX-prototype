@@ -87,13 +87,13 @@ def main():
     data_config = {
         "num_samples": 1000,
         "batch_size": 32,
-        "dataset_name": torchvision.datasets.FashionMNIST,
+        "dataset_name": torchvision.datasets.CIFAR10,
         "num_workers": 4,
     }
 
     _, testloader = get_test_data(data_config)
 
-    ep1 = "bad9c460-0b91-4dac-ba89-7afa5e0e1534"
+    ep1 = "fb93a1c2-a8d7-49f3-ad59-375f4e298784"
     eps = [ep1]
     print(f"Endpoints: {eps}")
 
@@ -104,9 +104,9 @@ def main():
         rounds=1,
         client_logic=client_logic,
         model_trainer=torch_trainer,
-        path_dir=["."],
+        path_dir=".",
         testloader=testloader,
-        dataset_name=torchvision.datasets.FashionMNIST,
+        dataset_name=torchvision.datasets.CIFAR10,
         preprocess=True,
     )
 

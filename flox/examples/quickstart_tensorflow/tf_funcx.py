@@ -12,7 +12,8 @@ from flox.utils import get_test_data
 def main():
 
     # ep1 = "fe49ba41-9654-4d1b-8266-fd2f8197b242"
-    ep1 = "ef588445-ce77-4839-ac9b-646465f872ee"
+    ep1 = "269f05e4-86df-471d-9339-40554b0667a0"
+    # ep2 = "c4d406f9-5f15-4d83-93be-67ab5a3e545b"
     eps = [ep1]
     print(f"Endpoints: {eps}")
 
@@ -46,13 +47,13 @@ def main():
 
     FloxServer = TensorflowController(
         endpoint_ids=eps,
-        num_samples=500,
-        epochs=5,
-        rounds=7,
+        num_samples=200,
+        epochs=2,
+        rounds=1,
         client_logic=ClientLogic,
         global_model=global_model,
         model_trainer=TFTrainer,
-        path_dir=["."],
+        path_dir=".",
         x_test=x_test,
         y_test=y_test,
         data_source="keras",
