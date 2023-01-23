@@ -41,7 +41,7 @@ class PyTorchClient(FloxClientLogic):
         )
 
         # create train DataLoader
-        testset = torchvision.datasets.CIFAR10(
+        testset = torchvision.datasets.dataset_name(
             root=root, train=False, download=True, transform=transform
         )
         test_split_len = (
