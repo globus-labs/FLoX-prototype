@@ -1,4 +1,4 @@
-from flox.controllers.controller import MainController
+from flox.controllers.MainController import MainController
 
 
 class PyTorchController(MainController):
