@@ -1,10 +1,15 @@
+import logging
 import time
 from collections import deque
 
 import numpy as np
 from funcx import FuncXClient
 
+from flox.common.logging_config import setup_logging
 from flox.logic import FloxControllerLogic
+
+setup_logging(debug=True)
+logger = logging.getLogger(__name__)
 
 
 class MainController(FloxControllerLogic):
@@ -64,7 +69,7 @@ class MainController(FloxControllerLogic):
 
         self.endpoints_statuses = {}
 
-    def create_config():
+    def create_config(self):
         pass
 
     def on_model_broadcast(self):
@@ -78,18 +83,18 @@ class MainController(FloxControllerLogic):
         for ep, num_s, num_epoch, path_d in zip(
             self.endpoint_ids, self.num_samples, self.epochs, self.path_dir
         ):
+            logger.info(f"Starting to broadcast a task to endpoint {ep}")
             try:
                 ep_status = self.funcx_client.get_endpoint_status(ep)["status"]
             except Exception as exp:
-                print(
+                logger.warning(
                     f"Could not check the status of the endpoint {ep}, the error is: {exp}"
                 )
                 ep_status = "error"
 
             if ep_status != "online":
-                print(f"Endpoint {ep} is not online, it's {ep_status}!")
+                logger.warning(f"Endpoint {ep} is not online, it's {ep_status}!")
             else:
-                self.endpoints_statuses[ep] = ep_status
                 config = self.create_config(num_s, num_epoch, path_d)
 
                 task = self.funcx_client.run(
@@ -101,12 +106,15 @@ class MainController(FloxControllerLogic):
                 )
                 tasks.append(task)
 
+            self.endpoints_statuses[ep] = ep_status
             self.task_start_time = (
                 time.time()
             )  # how would this work for multiple endpoints?
 
             if len(tasks) == 0:
-                print(self.endpoints_statuses)
+                logger.error(
+                    f"The tasks queue is empty, here are the endpoints' statuses: {self.endpoints_statuses}"
+                )
                 raise ValueError(
                     f"The tasks queue is empty, no tasks were submitted for training!"
                 )
@@ -117,47 +125,52 @@ class MainController(FloxControllerLogic):
         # extract model updates from each endpoints once they are available
         model_weights = []
         samples_count = []
-        retrieved_endpoint_order = []
+        endpoint_result_order = []
 
+        logger.info("Starting to retrieve results from endpoints")
         while tasks and (time.time() - self.task_start_time) < self.timeout:
             t = tasks.popleft()
             if self.funcx_client.get_task(t)["status"] == "success":
                 res = self.funcx_client.get_result(t)
                 model_weights.append(res["model_weights"])
                 samples_count.append(res["samples_count"])
-                retrieved_endpoint_order.append(t)
+                endpoint_result_order.append(t)
             else:
                 tasks.append(t)
+                logger.info(f"Retrieved results from endpoints {t}")
 
         samples_count = np.array(samples_count)
         total = sum(samples_count)
         fractions = samples_count / total
+        logger.info("Finished retrieving all results from the endpoints")
         return {
             "model_weights": model_weights,
             "samples_count": samples_count,
             "bias_weights": fractions,
-            "retrieved_endpoint_order": retrieved_endpoint_order,
+            "endpoint_result_order": endpoint_result_order,
         }
 
     def on_model_aggregate(self, results):
         average_weights = np.average(
             results["model_weights"], weights=results["bias_weights"], axis=0
         )
-
+        logger.info("Finished aggregating weights")
         return average_weights
 
     def on_model_update(self, updated_weights) -> None:
         self.model_trainer.set_weights(self.global_model, updated_weights)
+        logger.info("Updated the global model's weights")
 
     def on_model_evaluate(self):
         if self.x_test is not None and self.y_test is not None:
+            logger.info("Starting evaluation")
             results = self.model_trainer.evaluate(
                 self.global_model, self.x_test, self.y_test
             )
-            print(results)
+            logger.info(f"Evaluation results: {results}")
             return results
         else:
-            print("Skipping evaluation, no x_test and/or y_test provided")
+            logger.warning("Skipping evaluation, no x_test and/or y_test provided")
             return False
 
     def run_federated_learning(self):
@@ -177,5 +190,5 @@ class MainController(FloxControllerLogic):
             self.on_model_update(updated_weights)
 
             # evaluate the model
-            print(f"Round {i} evaluation results: ")
+            logger.info(f"Round {i} evaluation results: ")
             self.on_model_evaluate()

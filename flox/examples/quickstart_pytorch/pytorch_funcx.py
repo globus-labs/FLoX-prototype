@@ -1,3 +1,5 @@
+import logging
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,6 +11,8 @@ from torch import Tensor
 from flox.clients.PyTorchClient import PyTorchClient
 from flox.controllers.PyTorchController import PyTorchController
 from flox.model_trainers.PyTorchTrainer import PyTorchTrainer
+
+logger = logging.getLogger(__name__)
 
 
 def get_test_data(config):
@@ -95,7 +99,7 @@ def main():
 
     ep1 = "fb93a1c2-a8d7-49f3-ad59-375f4e298784"
     eps = [ep1]
-    print(f"Endpoints: {eps}")
+    logger.info(f"Endpoints: {eps}")
 
     FloxServer = PyTorchController(
         endpoint_ids=eps,
@@ -110,7 +114,7 @@ def main():
         preprocess=True,
     )
 
-    print("STARTING FL TORCH FLOW...")
+    logger.info("STARTING FL TORCH FLOW...")
     FloxServer.run_federated_learning()
 
 
