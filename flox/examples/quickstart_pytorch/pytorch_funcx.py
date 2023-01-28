@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 import torch
 import torch.nn as nn
@@ -6,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
+from funcx import FuncXExecutor
 from torch import Tensor
 
 from flox.clients.PyTorchClient import PyTorchClient
@@ -98,6 +100,7 @@ def main():
     _, testloader = get_test_data(data_config)
 
     ep1 = "fb93a1c2-a8d7-49f3-ad59-375f4e298784"
+
     eps = [ep1]
     logger.info(f"Endpoints: {eps}")
 
@@ -108,6 +111,8 @@ def main():
         rounds=1,
         client_logic=client_logic,
         model_trainer=torch_trainer,
+        executor=FuncXExecutor,  # choose one of [FuncXExecutor, ThreadPoolExecutor]
+        executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         path_dir=".",
         testloader=testloader,
         dataset_name=torchvision.datasets.CIFAR10,

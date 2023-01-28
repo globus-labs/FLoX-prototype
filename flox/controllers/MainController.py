@@ -3,7 +3,7 @@ import time
 from collections import deque
 
 import numpy as np
-from funcx import FuncXClient
+from funcx import FuncXClient, FuncXExecutor
 
 from flox.common.logging_config import setup_logging
 from flox.logic import FloxControllerLogic
@@ -15,23 +15,25 @@ logger = logging.getLogger(__name__)
 class MainController(FloxControllerLogic):
     def __init__(
         self,
-        endpoint_ids=None,
+        endpoint_ids,
+        client_logic,
+        model_trainer,
+        global_model=None,
+        executor=FuncXExecutor,
+        executor_type="funcx",
         num_samples=None,
         epochs=None,
         rounds=None,
-        client_logic=None,
-        global_model=None,
-        model_trainer=None,
-        path_dir=None,
+        path_dir=["."],
         x_test=None,
         y_test=None,
         data_source=None,
         dataset_name=None,
-        preprocess=None,
+        preprocess=True,
         x_train_filename=None,
         y_train_filename=None,
         input_shape=None,
-        timeout=None,
+        timeout=60,
     ):
         self.endpoint_ids = endpoint_ids
         self.num_samples = num_samples
@@ -40,6 +42,8 @@ class MainController(FloxControllerLogic):
         self.client_logic = client_logic
         self.global_model = global_model
         self.model_trainer = model_trainer
+        self.executor = executor
+        self.executor_type = executor_type
         self.path_dir = path_dir
         self.x_test = x_test
         self.y_test = y_test
@@ -62,9 +66,6 @@ class MainController(FloxControllerLogic):
         if type(self.path_dir) == str:
             self.path_dir = [self.path_dir] * len(self.endpoint_ids)
 
-        if not self.timeout:
-            self.timeout = 60
-
         self.funcx_client = FuncXClient(http_timeout=60)
 
         self.endpoints_statuses = {}
@@ -76,37 +77,49 @@ class MainController(FloxControllerLogic):
         # define list storage for results
         tasks = deque()
 
-        # registr the function
-        function_id = self.funcx_client.register_function(self.client_logic.run_round)
+        logger.debug(f"Launching the {self.executor} executor")
+        with self.executor() as executor:
+            # submit the corresponding parameters to each endpoint for a round of FL
+            for ep, num_s, num_epoch, path_d in zip(
+                self.endpoint_ids, self.num_samples, self.epochs, self.path_dir
+            ):
+                logger.info(f"Starting to broadcast a task to endpoint {ep}")
+                try:
+                    ep_status = self.funcx_client.get_endpoint_status(ep)["status"]
+                except Exception as exp:
+                    logger.warning(
+                        f"Could not check the status of the endpoint {ep}, the error is: {exp}"
+                    )
+                    ep_status = "error"
 
-        # submit the corresponding parameters to each endpoint for a round of FL
-        for ep, num_s, num_epoch, path_d in zip(
-            self.endpoint_ids, self.num_samples, self.epochs, self.path_dir
-        ):
-            logger.info(f"Starting to broadcast a task to endpoint {ep}")
-            try:
-                ep_status = self.funcx_client.get_endpoint_status(ep)["status"]
-            except Exception as exp:
-                logger.warning(
-                    f"Could not check the status of the endpoint {ep}, the error is: {exp}"
-                )
-                ep_status = "error"
+                if ep_status != "online" and self.executor == FuncXExecutor:
+                    logger.warning(f"Endpoint {ep} is not online, it's {ep_status}!")
+                else:
+                    config = self.create_config(num_s, num_epoch, path_d)
+                    executor.endpoint_id = ep
 
-            if ep_status != "online":
-                logger.warning(f"Endpoint {ep} is not online, it's {ep_status}!")
-            else:
-                config = self.create_config(num_s, num_epoch, path_d)
+                    if self.executor_type == "local":
+                        task = executor.submit(
+                            self.client_logic.run_round, config, self.model_trainer
+                        )
 
-                task = self.funcx_client.run(
-                    self.client_logic,
-                    config,
-                    self.model_trainer,
-                    endpoint_id=ep,
-                    function_id=function_id,
-                )
-                tasks.append(task)
+                    elif self.executor_type == "funcx":
+                        task = executor.submit(
+                            self.client_logic.run_round,
+                            self.client_logic,  # funcxExecutor requires the class submitted as well, while the ThreadPoolExecutor does not
+                            config,
+                            self.model_trainer,
+                        )
+                    else:
+                        raise ValueError(
+                            f"{self.executor_type} is invalid executor type, choose one of [local, funcx]"
+                        )
 
-            self.endpoints_statuses[ep] = ep_status
+                    logger.info(f"Deployed the task to endpoint {ep}")
+                    tasks.append(task)
+
+                self.endpoints_statuses[ep] = ep_status
+
             self.task_start_time = (
                 time.time()
             )  # how would this work for multiple endpoints?
@@ -130,8 +143,8 @@ class MainController(FloxControllerLogic):
         logger.info("Starting to retrieve results from endpoints")
         while tasks and (time.time() - self.task_start_time) < self.timeout:
             t = tasks.popleft()
-            if self.funcx_client.get_task(t)["status"] == "success":
-                res = self.funcx_client.get_result(t)
+            if t.done():
+                res = t.result()
                 model_weights.append(res["model_weights"])
                 samples_count.append(res["samples_count"])
                 endpoint_result_order.append(t)
