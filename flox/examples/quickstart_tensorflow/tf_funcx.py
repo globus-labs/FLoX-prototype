@@ -1,6 +1,9 @@
+import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import tensorflow as tf
+from funcx import FuncXExecutor
 from tensorflow import keras
 
 from flox.clients.TensorflowClient import TensorflowClient
@@ -8,14 +11,15 @@ from flox.controllers.TensorflowController import TensorflowController
 from flox.model_trainers.TensorflowTrainer import TensorflowTrainer
 from flox.utils import get_test_data
 
+logger = logging.getLogger(__name__)
+
 
 def main():
 
-    # ep1 = "fe49ba41-9654-4d1b-8266-fd2f8197b242"
-    ep1 = "269f05e4-86df-471d-9339-40554b0667a0"
-    # ep2 = "c4d406f9-5f15-4d83-93be-67ab5a3e545b"
+    ep1 = "c7487b2b-b129-47e2-989b-5a9ac361befc"
+
     eps = [ep1]
-    print(f"Endpoints: {eps}")
+    logger.info(f"Endpoints: {eps}")
 
     # `fashion_mnist` images are grayscale, 28 x 28 pixels in size
     input_shape = (28, 28, 1)
@@ -52,6 +56,8 @@ def main():
         rounds=1,
         client_logic=ClientLogic,
         global_model=global_model,
+        executor=FuncXExecutor,  # choose one of [FuncXExecutor, ThreadPoolExecutor]
+        executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         model_trainer=TFTrainer,
         path_dir=".",
         x_test=x_test,
@@ -61,7 +67,7 @@ def main():
         preprocess=True,
     )
 
-    print("STARTING FL FLOW...")
+    logger.info("STARTING FL FLOW...")
     FloxServer.run_federated_learning()
 
 

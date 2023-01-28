@@ -1,4 +1,8 @@
+import logging
+
 from flox.controllers.MainController import MainController
+
+logger = logging.getLogger(__name__)
 
 
 class PyTorchController(MainController):
