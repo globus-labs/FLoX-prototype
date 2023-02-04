@@ -4,7 +4,7 @@ typehint:
 
 .PHONY: test
 test:
-	pytest tests/
+	pytest flox/tests/
 
 .PHONY: lint
 lint:
