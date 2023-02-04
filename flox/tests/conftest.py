@@ -50,7 +50,6 @@ def tf_controller():
         rounds=2,
         client_logic=tf_client_logic,
         global_model=global_model,
-        executor=ThreadPoolExecutor,  # choose one of [FuncXExecutor, ThreadPoolExecutor]
         executor_type="local",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         model_trainer=tf_trainer,
         path_dir=".",

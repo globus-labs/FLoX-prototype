@@ -4,7 +4,11 @@ typehint:
 
 .PHONY: test
 test:
-	pytest flox/tests/
+	pytest flox/tests/ --disable-warnings
+
+.PHONY: test_unit
+test_unit:
+	pytest flox/tests/unit --disable-warnings
 
 .PHONY: lint
 lint:

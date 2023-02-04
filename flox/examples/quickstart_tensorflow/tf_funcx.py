@@ -46,19 +46,18 @@ def main():
     )
     x_test, y_test = get_test_data(keras_dataset="fashion_mnist", num_samples=2000)
 
-    TFTrainer = TensorflowTrainer()
-    ClientLogic = TensorflowClient()
+    tf_trainer = TensorflowTrainer()
+    tf_client = TensorflowClient()
 
-    FloxServer = TensorflowController(
+    flox_controller = TensorflowController(
         endpoint_ids=eps,
         num_samples=200,
         epochs=2,
         rounds=1,
-        client_logic=ClientLogic,
+        client_logic=tf_client,
         global_model=global_model,
-        executor=FuncXExecutor,  # choose one of [FuncXExecutor, ThreadPoolExecutor]
         executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
-        model_trainer=TFTrainer,
+        model_trainer=tf_trainer,
         path_dir=".",
         x_test=x_test,
         y_test=y_test,
@@ -68,7 +67,7 @@ def main():
     )
 
     logger.info("STARTING FL FLOW...")
-    FloxServer.run_federated_learning()
+    flox_controller.run_federated_learning()
 
 
 if __name__ == "__main__":
