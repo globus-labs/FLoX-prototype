@@ -29,10 +29,10 @@ def get_test_data(config):
         ]
     )
 
-    batch_size = 32 if "batch_size" not in config.keys() else config["batch_size"]
+    batch_size = config.get("batch_size", 32)
     dataset_name = config["dataset_name"]
-    num_workers = 8 if "num_workers" not in config.keys() else config["num_workers"]
-    root = "./data" if "data_root" not in config.keys() else config["data_root"]
+    num_workers = config.get("num_workers", 8)
+    root = config.get("data_root", "./data")
 
     # create train DataLoader
     trainset = dataset_name(root=root, train=True, download=True, transform=transform)
@@ -88,7 +88,7 @@ def main():
 
     net = Net()
     torch_trainer = PyTorchTrainer(net)
-    client_logic = PyTorchClient()
+    torch_client = PyTorchClient()
 
     data_config = {
         "num_samples": 1000,
@@ -104,14 +104,13 @@ def main():
     eps = [ep1]
     logger.info(f"Endpoints: {eps}")
 
-    FloxServer = PyTorchController(
+    flox_controller = PyTorchController(
         endpoint_ids=eps,
         num_samples=100,
         epochs=1,
         rounds=1,
-        client_logic=client_logic,
+        client_logic=torch_client,
         model_trainer=torch_trainer,
-        executor=FuncXExecutor,  # choose one of [FuncXExecutor, ThreadPoolExecutor]
         executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         path_dir=".",
         testloader=testloader,
@@ -120,7 +119,7 @@ def main():
     )
 
     logger.info("STARTING FL TORCH FLOW...")
-    FloxServer.run_federated_learning()
+    flox_controller.run_federated_learning()
 
 
 if __name__ == "__main__":

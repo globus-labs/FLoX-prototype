@@ -1,3 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
+
+from funcx import FuncXExecutor
+
+
 def test_init_num_samples_int(tf_controller):
     """MainController.on_model_init() correctly initiates num_samples
     when only a single integer is provided"""
@@ -53,3 +58,37 @@ def test_init_path_list(tf_controller):
     tf_controller.path_dir = path_dir_list
     tf_controller.on_model_init()
     assert tf_controller.path_dir == path_dir_list
+
+
+def test_init_executor_default(tf_controller):
+    """MainController.on_model_init() correctly initiates the executor when the executor
+    and executor_type are not provided"""
+    tf_controller.executor = None
+
+    tf_controller.on_model_init()
+
+    assert tf_controller.executor_type == "local"
+    assert tf_controller.executor == ThreadPoolExecutor
+
+
+def test_init_executor_provided_type(tf_controller):
+    """MainController.on_model_init() correctly initiates the executor when executor_type is provided
+    but no executor is provided."""
+    tf_controller.executor = None
+    tf_controller.executor_type = "funcx"
+
+    tf_controller.on_model_init()
+
+    assert tf_controller.executor_type == "funcx"
+    assert tf_controller.executor == FuncXExecutor
+
+
+def test_init_executor_provided_executor(tf_controller):
+    """MainController.on_model_init() correctly initiates the executor when a custom executor is provided."""
+    tf_controller.executor = "fake_executor"
+    tf_controller.executor_type = "local"
+
+    tf_controller.on_model_init()
+
+    assert tf_controller.executor_type == "local"
+    assert tf_controller.executor == "fake_executor"

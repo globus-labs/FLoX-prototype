@@ -67,17 +67,18 @@ def main():
 
     x_test, y_test = process_data(x_test, y_test)
 
-    TFTrainer = TensorflowTrainer(loss="sparse_categorical_crossentropy")
-    ClientLogic = TensorflowClient()
+    tf_trainer = TensorflowTrainer(loss="sparse_categorical_crossentropy")
+    tf_client = TensorflowClient()
 
-    FloxServer = TensorflowController(
+    flox_controller = TensorflowController(
         endpoint_ids=eps,
         num_samples=200,
         epochs=1,
         rounds=1,
-        client_logic=ClientLogic,
+        client_logic=tf_client,
         global_model=global_model,
-        model_trainer=TFTrainer,
+        model_trainer=tf_trainer,
+        executor_type="funcx",
         data_source="local",
         path_dir="/home/pi/datasets",
         x_train_filename="x_animal10_32.npy",
@@ -90,7 +91,7 @@ def main():
     )
 
     print("STARTING FL FLOW...")
-    FloxServer.run_federated_learning()
+    flox_controller.run_federated_learning()
 
 
 if __name__ == "__main__":
