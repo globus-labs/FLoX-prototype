@@ -95,6 +95,12 @@ class MainController(FloxControllerLogic):
     y_test: list
         y_test labels for x_test
 
+    running_average: bool
+        if True, will use `tasks_to_running_average` to aggregate the model weights
+        as a simple average on the fly as they are returned from the Executor.
+        This speeds up the total processing time when you have many endpoints and aggregating
+        all of them in a single operation takes too long
+
     """
 
     AVAILABLE_EXECUTORS = {"local": ThreadPoolExecutor, "funcx": FuncXExecutor}
@@ -120,6 +126,7 @@ class MainController(FloxControllerLogic):
         y_train_filename: str = None,
         input_shape: Tuple[int] = None,
         timeout: int = 60,
+        running_average: bool = False,
     ):
         self.endpoint_ids = endpoint_ids
         self.num_samples = num_samples
@@ -140,6 +147,7 @@ class MainController(FloxControllerLogic):
         self.y_train_filename = y_train_filename
         self.input_shape = input_shape
         self.timeout = timeout
+        self.running_average = running_average
 
     def on_model_init(self) -> None:
         """Does initial Controller setup before running the main Federated Learning loop"""
@@ -186,12 +194,12 @@ class MainController(FloxControllerLogic):
         """
         raise NotImplementedError("Method not implemented")
 
-    def on_model_broadcast(self) -> List:
+    def on_model_broadcast(self) -> deque:
         """Sends the model and config to endpoints for FL training.
 
         Returns
         -------
-        tasks: List[future]
+        tasks: deque[future]
             return a list of futures. The futures should support methods .done() and .result()
 
         """
@@ -255,7 +263,7 @@ class MainController(FloxControllerLogic):
 
         return tasks
 
-    def on_model_receive(self, tasks: List) -> Dict:
+    def on_model_receive(self, tasks: deque) -> Dict:
         """Processes returned tasks from on_model_broadcast.
 
         Parameters
@@ -372,11 +380,16 @@ class MainController(FloxControllerLogic):
             # broadcast the model
             tasks = self.on_model_broadcast()
 
-            # process & decrypt the results
-            results = self.on_model_receive(tasks)
+            if self.running_average:
+                updated_weights = self.tasks_to_running_average(tasks)[
+                    "running_average_weights"
+                ]
+            else:
+                # process & decrypt the results
+                results = self.on_model_receive(tasks)
 
-            # aggregate the weights
-            updated_weights = self.on_model_aggregate(results)
+                # aggregate the weights
+                updated_weights = self.on_model_aggregate(results)
 
             # update the model's weights
             self.on_model_update(updated_weights)
@@ -384,3 +397,86 @@ class MainController(FloxControllerLogic):
             # evaluate the model
             logger.info(f"Round {i} evaluation results: ")
             self.on_model_evaluate()
+
+    def tasks_to_running_average(self, tasks: deque):
+        """Serves as a modified combination of on_model_receive and on_model_aggregate.
+        Aggregates the model weights
+        as a simple average on the fly as they are returned from the Executor.
+        This speeds up the total processing time when you have many endpoints and aggregating
+        all of them in a single operation takes too long. Note that the aggregated model
+        will be slightly different from what you would get if you used on_model_aggregate
+        on all of the weights in a single operation. This is because of the reiterative
+        floating point averaging.
+
+        Parameters
+        ----------
+        tasks: List[futures]
+            A list of tasks/futures with results of the FL training returned from the endpoints.
+            If using FuncXExecutor/ThreadPoolExecutor, this would be a list of futures
+            funcX/ThreadPoolExecutor returns after you submit functions to endpoints.
+
+        Returns
+        -------
+        results: Dict
+            FL results extracted from tasks, formatted as a dictionary. For example:
+            results = {
+                "model_weights": model_weights,
+                "samples_count": samples_count,
+                "bias_weights": fractions,
+                "running_average_weights": running_average
+            }
+        """
+        model_weights = []
+        samples_count = []
+        endpoint_result_order = []
+
+        n_aggregated = 0
+        n_total = 0
+        running_average = None
+
+        logger.info("Starting to retrieve results from endpoints")
+        while tasks and (time.time() - self.task_start_time) < self.timeout:
+            t = tasks.popleft()
+            if t.done():
+                res = t.result()
+                new_weights = res["model_weights"]
+                model_weights.append(new_weights)
+                samples_count.append(res["samples_count"])
+                endpoint_result_order.append(t)
+                # update running average
+                if running_average is None:
+                    logger.debug(
+                        "the running average is NONE, instantiating it for the first time"
+                    )
+                    running_average = new_weights
+                    n_aggregated += 1
+                    n_total += 1
+                else:
+                    n_total += 1
+                    running_weights = [
+                        (n_aggregated / n_total),
+                        (n_total - n_aggregated) / n_total,
+                    ]
+                    logger.info(
+                        f"The weights are {running_weights} and sum up to {sum(running_weights)}"
+                    )
+                    running_average = np.average(
+                        [running_average, new_weights], weights=running_weights, axis=0
+                    )
+                    n_aggregated += 1
+
+            else:
+                tasks.append(t)
+                logger.info(f"Retrieved results from endpoints {t}")
+
+        samples_count = np.array(samples_count)
+        total = sum(samples_count)
+        fractions = samples_count / total
+        logger.info("Finished retrieving all results from the endpoints")
+        return {
+            "model_weights": model_weights,
+            "samples_count": samples_count,
+            "bias_weights": fractions,
+            "endpoint_result_order": endpoint_result_order,
+            "running_average_weights": running_average,
+        }
