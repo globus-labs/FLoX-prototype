@@ -3,6 +3,9 @@ env
 *.npy
 build/
 pyflox.egg-info/
-data/
+build/
 dist/
+data/
 
+*.pyc
+.vscode/settings.json

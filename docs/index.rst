@@ -19,5 +19,7 @@ Contents
 
 .. toctree::
 
-   install
+   Homepage <self>
    usage
+   install
+   logic
