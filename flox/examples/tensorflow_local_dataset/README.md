@@ -35,3 +35,4 @@ On your *Clients*:
 
 5. Paste the endpoint's id (``funcx-endpoint list``) and paste it into ``pytorch_funcx.py`` on the *Controller* at the endpoint definition line
 
+6. For local dataset execution, place the files ``x_animal10_32.npy`` and ``y_animal10_32.npy`` (which you can find [here](https://www.kaggle.com/datasets/alessiocorrado99/animals10)) under ``/home/pi/datasets`` directory. Otherwise, if you want to have a different directory structure and filenames, just change those variables when instantiating ``flox_controller``.
