@@ -111,7 +111,7 @@ def main():
         rounds=1,
         client_logic=torch_client,
         model_trainer=torch_trainer,
-        executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
+        executor_type="local",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         path_dir=".",
         testloader=testloader,
         dataset_name=torchvision.datasets.CIFAR10,

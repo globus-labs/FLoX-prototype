@@ -1,7 +1,8 @@
 # Quickstart PyTorch Tutorial
 
-
-This example is in development and includes only basic setup and execution instructions.
+This example will show you how to run a Federated Learning workflow using PyTorch either using
+actual endpoints with funcX or running a local simulation using a local executor.
+You can also follow the Jupyter Notebook.
 
 ### Controller instructions
 
@@ -13,14 +14,15 @@ On your *Controller*, follow these instructions:
 
 3. Install [PyTorch](https://pytorch.org/): ``pip install torch==1.12.0`` and ``pip install torchvision==0.13.0``
 
-4. Create a dist file with ``python setup.py bdist_wheel`` and transfer the created dist file to the Clients
-This step will be eliminated once the library is published on PyPI.
+4. (*if using real endpoints*) Create a dist file with ``python setup.py bdist_wheel`` and transfer the created dist file to the Clients. This step will be eliminated once the library is published on PyPI.
 
-5. Configure your *Clients* as per instructions below
+5. (*if using real endpoints*) Configure your *Clients* as per instructions below
 
-6. Run ``python flox/examples/quickstart_pytorch/pytorch_funcx.py``
+6. In the initialization of ``PyTorchController``, set ``executor_type="funcx"`` if using real endpoints.
 
-### Clients instructions
+6. Run ``python flox/examples/quickstart_pytorch/quickstart_pytorch.py``
+
+### Clients instructions (*if using real endpoints*)
 
 On your *Clients*:
 1. Make sure you are using a 64-bit OS, this will make PyTorch installation easier
@@ -33,6 +35,6 @@ On your *Clients*:
 
 5. Configure (``funcx-endpoint configure ep1``) and start (``funcx-endpoint start ep1``) an endpoint.
 
-6. Paste the endpoint's id (``funcx-endpoint list``) and paste it into ``pytorch_funcx.py`` on the *Controller* at the endpoint definition line
+6. Copy the endpoint's id (``funcx-endpoint list``) from the *Client* and paste it into ``pytorch_funcx.py`` on the *Controller* at the endpoint definition line
 
 

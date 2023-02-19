@@ -1,11 +1,1 @@
-from .typing import (
-    ConfigFile,
-    EvaluateRes,
-    FitIns,
-    FuturesList,
-    NDArray,
-    NDArrays,
-    ResultsList,
-    UpdateIns,
-    XYData,
-)
+from .typing import NDArray, NDArrays, XYData

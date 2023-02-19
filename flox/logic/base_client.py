@@ -1,5 +1,5 @@
 """Abstract Base Class for FLoX Clients"""
-from flox.common import ConfigFile, FitIns, NDArrays, ResultsList, XYData
+from flox.common import NDArrays, XYData
 
 
 class FloxClientLogic:
@@ -9,7 +9,7 @@ class FloxClientLogic:
         """Parses & decrypts the received data from a controller"""
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_data_retrieve(self, config: ConfigFile) -> XYData:
+    def on_data_retrieve(self, config: dict) -> XYData:
         """Retrieves data for training the model.
 
         Parameters
@@ -28,19 +28,19 @@ class FloxClientLogic:
         """
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_model_fit(self, ins: FitIns) -> NDArrays:
+    def on_model_fit(self) -> NDArrays:
         """Fit the provided global model using a local dataset
 
         Parameters
         ----------
-        FitIns
-            Parameters for fitting the model. This might take different forms depending on the
-            ML framework. For Tensorflow, it might look like this:
-                model: keras.Sequential
-                ModelTrainer: Class
-                config: ConfigFile
-                x_train: NDArrays
-                y_train: Union[NDArray, NDArrays]
+
+        Parameters for fitting the model. This might take different forms depending on the
+        ML framework. For Tensorflow, it might look like this:
+            model: keras.Sequential
+            ModelTrainer: Class
+            config: ConfigFile
+            x_train: NDArrays
+            y_train: Union[NDArray, NDArrays]
 
         Returns
         -------
@@ -51,14 +51,14 @@ class FloxClientLogic:
 
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def on_model_send(self) -> ResultsList:
+    def on_model_send(self) -> dict:
         """Final data processing before sending the results back, such as encryption.
 
         Returns
         -------
-        ResultsList
+        results: dict
             FL results formatted as a dictionary. For example:
-            ResultsList = {
+            results = {
                 "model_weights": model_weights,
                 "samples_count": samples_count,
                 "bias_weights": fractions,
@@ -67,24 +67,24 @@ class FloxClientLogic:
         """
         raise NotImplementedError("Abstract class method. Cannot be called directly.")
 
-    def run_round(self, ModelTrainer, config: ConfigFile) -> ResultsList:
+    def run_round(self, model_trainer, config: dict) -> dict:
         """Combines the rest of the functions to run a single Federated Learning round
 
         Parameters
         ----------
-        ModelTrainer
+        model_trainer
             instance of a class based on BaseModelTrainer that implements
             .fit(), .evaluate(), .get_weights(), and .set_weights()
 
-        config: ConfigFile
+        config: dict
             a dictionary with all the necessary parameters for retrieving data and
             training the model
 
         Returns
         -------
-        ResultsList
+        results: dict
             FL results formatted as a dictionary. For example:
-            ResultsList = {
+            results = {
                 "model_weights": model_weights,
                 "samples_count": samples_count,
                 "bias_weights": fractions,

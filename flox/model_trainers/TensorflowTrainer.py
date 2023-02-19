@@ -1,7 +1,7 @@
 """TensorFlow ML ModelTrainer Class"""
 from tensorflow.keras.models import Sequential
 
-from flox.common import EvaluateRes, NDArrays
+from flox.common import NDArrays
 from flox.logic import BaseModelTrainer
 
 
@@ -33,12 +33,10 @@ class TensorflowTrainer(BaseModelTrainer):
     ) -> None:
         model.fit(x_train, y_train, epochs=epochs)
 
-    def evaluate(
-        self, model: Sequential, x_test: NDArrays, y_test: NDArrays
-    ) -> EvaluateRes:
+    def evaluate(self, model: Sequential, x_test: NDArrays, y_test: NDArrays) -> dict:
         scores = model.evaluate(x_test, y_test, verbose=0)
         loss, accuracy = scores[0], scores[1]
-        return EvaluateRes(loss=float(loss), metrics={"accuracy": float(accuracy)})
+        return {"loss": float(loss), "metrics": {"accuracy": float(accuracy)}}
 
     def get_architecture(self, model: Sequential) -> object:
         """Returns Tensorflow's model architecture as a JSON file"""

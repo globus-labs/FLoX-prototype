@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from flox.common import EvaluateRes, NDArrays
+from flox.common import NDArrays
 from flox.logic import BaseModelTrainer
 
 
@@ -68,7 +68,7 @@ class PyTorchTrainer(BaseModelTrainer):
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
         accuracy = correct / total
-        return EvaluateRes(loss=float(loss), metrics={"accuracy": float(accuracy)})
+        return {"loss": float(loss), "metrics": {"accuracy": float(accuracy)}}
 
     def get_weights(self) -> NDArrays:
         """Get model weights as a list of NumPy ndarrays."""
