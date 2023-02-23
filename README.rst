@@ -14,7 +14,8 @@ FLoX (**F**\ ederated **L**\ earning on func\ **X**) is a Python library
 for serverless Federated Learning experiments.
 FLoX makes it easy and fast to set up your FL infrastructure, allowing you to start
 running FL workflows in under 5 minutes.
-Follow our Quickstart tutorial and examples to get started!
+Follow our Quickstart tutorial and examples to get started! You can read the associated paper
+`here <https://ieeexplore.ieee.org/document/9973578>`_.
 
 Quickstart
 =====
@@ -65,3 +66,19 @@ Contributions are welcome. Please see `CONTRIBUTING.md <https://github.com/globu
 Documentation
 =============
 Complete documentation for FLoX is available `here <https://pyflox.readthedocs.io/en/latest/>`_.
+
+Citation
+========
+If you publish work that uses FLoX, please cite FLoX as follows:
+```bibtex
+@INPROCEEDINGS{9973578,
+  author={Kotsehub, Nikita and Baughman, Matt and Chard, Ryan and Hudson, Nathaniel and Patros, Panos and Rana, Omer and Foster, Ian and Chard, Kyle},
+  booktitle={2022 IEEE 18th International Conference on e-Science (e-Science)},
+  title={FLoX: Federated Learning with FaaS at the Edge},
+  year={2022},
+  volume={},
+  number={},
+  pages={11-20},
+  doi={10.1109/eScience55777.2022.00016}}
+```
+
