@@ -73,7 +73,7 @@ If you publish work that uses FLoX, please cite FLoX as follows:
 
 .. code-block:: bibtex
 
-@INPROCEEDINGS{9973578,
+@INPROCEEDINGS{kotsehub_flox_2022,
   author={Kotsehub, Nikita and Baughman, Matt and Chard, Ryan and Hudson, Nathaniel and Patros, Panos and Rana, Omer and Foster, Ian and Chard, Kyle},
   booktitle={2022 IEEE 18th International Conference on e-Science (e-Science)},
   title={FLoX: Federated Learning with FaaS at the Edge},
