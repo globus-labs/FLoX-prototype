@@ -70,7 +70,7 @@ Complete documentation for FLoX is available `here <https://pyflox.readthedocs.i
 Citation
 ========
 If you publish work that uses FLoX, please cite FLoX as follows:
-.. code-block:: console
+.. code-block:: bibtex
 @INPROCEEDINGS{9973578,
   author={Kotsehub, Nikita and Baughman, Matt and Chard, Ryan and Hudson, Nathaniel and Patros, Panos and Rana, Omer and Foster, Ian and Chard, Kyle},
   booktitle={2022 IEEE 18th International Conference on e-Science (e-Science)},
