@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 
 def main():
 
-    ep1 = "c7487b2b-b129-47e2-989b-5a9ac361befc"
+    ep1 = "62f1e8da-efa0-4474-be4d-fe298234fcc9"
+    ep2 = "e03cac12-8f8f-4bf2-bf03-0378da93ff2c"
 
-    eps = [ep1]
+    eps = [ep1, ep2]
     logger.info(f"Endpoints: {eps}")
 
     # `fashion_mnist` images are grayscale, 28 x 28 pixels in size
@@ -53,17 +54,17 @@ def main():
         endpoint_ids=eps,
         num_samples=200,
         epochs=2,
-        rounds=1,
+        rounds=3,
         client_logic=tf_client,
         global_model=global_model,
         executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         model_trainer=tf_trainer,
-        path_dir=".",
         x_test=x_test,
         y_test=y_test,
         data_source="keras",
         dataset_name="fashion_mnist",
         preprocess=True,
+        tasks_per_endpoint=4,
     )
 
     logger.info("STARTING FL FLOW...")

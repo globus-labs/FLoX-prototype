@@ -116,7 +116,7 @@ class MainController(FloxControllerLogic):
         num_samples: Union[int, List[int]] = 100,
         epochs: Union[int, List[int]] = 5,
         rounds: int = 3,
-        path_dir: Union[str, List[int]] = ["."],
+        path_dir: Union[str, List[int]] = ".",
         x_test=None,
         y_test=None,
         data_source: str = None,
@@ -125,8 +125,9 @@ class MainController(FloxControllerLogic):
         x_train_filename: str = None,
         y_train_filename: str = None,
         input_shape: Tuple[int] = None,
-        timeout: int = 60,
+        timeout: int = float("inf"),
         running_average: bool = False,
+        tasks_per_endpoint: int = 1,
     ):
         self.endpoint_ids = endpoint_ids
         self.num_samples = num_samples
@@ -148,6 +149,7 @@ class MainController(FloxControllerLogic):
         self.input_shape = input_shape
         self.timeout = timeout
         self.running_average = running_average
+        self.tasks_per_endpoint = tasks_per_endpoint
 
     def on_model_init(self) -> None:
         """Does initial Controller setup before running the main Federated Learning loop"""
@@ -209,6 +211,12 @@ class MainController(FloxControllerLogic):
         logger.debug(f"Launching the {self.executor} executor")
         with self.executor() as executor:
             # submit the corresponding parameters to each endpoint for a round of FL
+            assert (
+                len(self.endpoint_ids)
+                == len(self.num_samples)
+                == len(self.epochs)
+                == len(self.path_dir)
+            )
             for ep, num_s, num_epoch, path_d in zip(
                 self.endpoint_ids, self.num_samples, self.epochs, self.path_dir
             ):
@@ -227,25 +235,26 @@ class MainController(FloxControllerLogic):
                     config = self.create_config(num_s, num_epoch, path_d)
                     executor.endpoint_id = ep
 
-                    if self.executor_type == "local":
-                        task = executor.submit(
-                            self.client_logic.run_round, config, self.model_trainer
-                        )
+                    for i in range(self.tasks_per_endpoint):
+                        if self.executor_type == "local":
+                            task = executor.submit(
+                                self.client_logic.run_round, config, self.model_trainer
+                            )
 
-                    elif self.executor_type == "funcx":
-                        task = executor.submit(
-                            self.client_logic.run_round,
-                            self.client_logic,  # funcxExecutor requires the class submitted as well, while the ThreadPoolExecutor does not
-                            config,
-                            self.model_trainer,
-                        )
-                    else:
-                        raise ValueError(
-                            f"{self.executor_type} is invalid executor type, choose one of [local, funcx]"
-                        )
+                        elif self.executor_type == "funcx":
+                            task = executor.submit(
+                                self.client_logic.run_round,
+                                self.client_logic,  # funcxExecutor requires the class submitted as well, while the ThreadPoolExecutor does not
+                                config,
+                                self.model_trainer,
+                            )
+                        else:
+                            raise ValueError(
+                                f"{self.executor_type} is invalid executor type, choose one of [local, funcx]"
+                            )
 
-                    logger.info(f"Deployed the task to endpoint {ep}")
-                    tasks.append(task)
+                        tasks.append(task)
+                        logger.info(f"Deployed task {i} to endpoint {ep}")
 
                 self.endpoints_statuses[ep] = ep_status
 
@@ -291,6 +300,7 @@ class MainController(FloxControllerLogic):
         while tasks and (time.time() - self.task_start_time) < self.timeout:
             t = tasks.popleft()
             if t.done():
+                logger.debug(f"Retrieved task {t}")
                 res = t.result()
                 model_weights.append(res["model_weights"])
                 samples_count.append(res["samples_count"])
@@ -329,6 +339,7 @@ class MainController(FloxControllerLogic):
             ML model weights for a single model in the form of Numpy Arrays.
 
         """
+        logger.warning(f"Aggregating {len(results['model_weights'])} weights")
         average_weights = np.average(
             results["model_weights"], weights=results["bias_weights"], axis=0
         )
