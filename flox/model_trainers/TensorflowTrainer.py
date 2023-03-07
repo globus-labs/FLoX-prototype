@@ -29,9 +29,14 @@ class TensorflowTrainer(BaseModelTrainer):
         model.set_weights(weights)
 
     def fit(
-        self, model: Sequential, x_train: NDArrays, y_train: NDArrays, epochs: int = 10
+        self,
+        model: Sequential,
+        x_train: NDArrays,
+        y_train: NDArrays,
+        epochs: int = 10,
+        batch_size: int = None,
     ) -> None:
-        model.fit(x_train, y_train, epochs=epochs)
+        model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size)
 
     def evaluate(self, model: Sequential, x_test: NDArrays, y_test: NDArrays) -> dict:
         scores = model.evaluate(x_test, y_test, verbose=0)

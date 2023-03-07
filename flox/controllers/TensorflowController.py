@@ -2,13 +2,14 @@ from flox.controllers.MainController import MainController
 
 
 class TensorflowController(MainController):
-    def create_config(self, num_s, num_epoch, path_d):
+    def create_config(self, num_s, num_epoch, path_d, batch_size):
         model_architecture = self.model_trainer.get_architecture(self.global_model)
         model_weights = self.model_trainer.get_weights(self.global_model)
 
         config = {
             "num_samples": num_s,
             "epochs": num_epoch,
+            "batch_size": batch_size,
             "path_dir": path_d,
             "data_source": self.data_source,
             "dataset_name": self.dataset_name,

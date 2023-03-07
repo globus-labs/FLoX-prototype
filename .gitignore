@@ -9,3 +9,4 @@ data/
 
 *.pyc
 .vscode/settings.json
+*.csv

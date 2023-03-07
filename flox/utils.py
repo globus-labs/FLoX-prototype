@@ -1,3 +1,6 @@
+import csv
+import os
+
 import numpy as np
 from tensorflow import keras
 
@@ -93,3 +96,16 @@ def get_test_data(
                     y_test = keras.utils.to_categorical(y_test, num_classes)
 
         return (x_test, y_test)
+
+
+def create_csv(filename, header):
+    if not os.path.exists(filename):
+        with open(filename, "a", encoding="UTF8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=header)
+            writer.writeheader()
+
+
+def write_to_csv(filename: str, header: str, data: dict):
+    with open(filename, "a", encoding="UTF8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=header)
+        writer.writerow(data)

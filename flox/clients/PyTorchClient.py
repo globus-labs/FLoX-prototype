@@ -1,11 +1,8 @@
-from flox.logic import FloxClientLogic
+from flox.clients.MainClient import MainClient
 
 
-class PyTorchClient(FloxClientLogic):
-    def on_model_receive():
-        pass
-
-    def on_data_retrieve(self, config):
+class PyTorchClient(MainClient):
+    def retrieve_framework_data(self, config):
         import torch
         import torchvision
         import torchvision.transforms as transforms
@@ -57,15 +54,15 @@ class PyTorchClient(FloxClientLogic):
             test_subpart, batch_size=batch_size, shuffle=False, num_workers=num_workers
         )
 
-        return trainloader, testloader
+        return trainloader
 
-    def on_model_fit(self, ModelTrainer, trainloader, config):
-        model_weights = ModelTrainer.fit(trainloader, config)
+    def on_model_fit(self, model_trainer, config, training_data):
+        model_weights = model_trainer.fit(training_data, config)
 
         return model_weights
 
-    def run_round(self, config, ModelTrainer):
-        trainloader, testloader = self.on_data_retrieve(config)
-        fit_results = self.on_model_fit(ModelTrainer, trainloader, config)
+    # def run_round(self, config, model_trainer):
+    #     trainloader = self.on_data_retrieve(config)
+    #     fit_results = self.on_model_fit(model_trainer, trainloader, config)
 
-        return {"model_weights": fit_results, "samples_count": config["num_samples"]}
+    #     return {"model_weights": fit_results, "samples_count": config["num_samples"]}

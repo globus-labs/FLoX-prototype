@@ -17,6 +17,7 @@ class PyTorchController(MainController):
             "path_dir": path_d,
             "dataset_name": self.dataset_name,
             "preprocess": self.preprocess,
+            "data_source": self.data_source,
         }
 
         return config

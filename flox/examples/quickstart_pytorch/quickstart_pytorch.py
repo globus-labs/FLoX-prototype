@@ -113,9 +113,12 @@ def main():
         model_trainer=torch_trainer,
         executor_type="local",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         path_dir=".",
+        data_source="framework",
         testloader=testloader,
         dataset_name=torchvision.datasets.CIFAR10,
         preprocess=True,
+        tasks_per_endpoint=1,
+        csv_filename="test_pytorch_eval.csv",
     )
 
     logger.info("STARTING FL TORCH FLOW...")

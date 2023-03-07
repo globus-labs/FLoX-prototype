@@ -1,6 +1,5 @@
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
 
 import tensorflow as tf
 from funcx import FuncXExecutor
@@ -16,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 def main():
 
-    ep1 = "62f1e8da-efa0-4474-be4d-fe298234fcc9"
-    ep2 = "e03cac12-8f8f-4bf2-bf03-0378da93ff2c"
+    ep1 = "a0147aaf-8fa1-4420-8548-5abb8207cdbb"
+    ep2 = "b8ceb5a3-a80c-4544-afdd-debc52e4055c"
 
     eps = [ep1, ep2]
     logger.info(f"Endpoints: {eps}")
@@ -52,8 +51,8 @@ def main():
 
     flox_controller = TensorflowController(
         endpoint_ids=eps,
-        num_samples=200,
-        epochs=2,
+        num_samples=[100, 200],
+        epochs=[2, 4],
         rounds=3,
         client_logic=tf_client,
         global_model=global_model,
@@ -61,10 +60,11 @@ def main():
         model_trainer=tf_trainer,
         x_test=x_test,
         y_test=y_test,
-        data_source="keras",
+        data_source="framework",
         dataset_name="fashion_mnist",
         preprocess=True,
-        tasks_per_endpoint=4,
+        tasks_per_endpoint=2,
+        csv_filename="test_evaluation_2.csv",
     )
 
     logger.info("STARTING FL FLOW...")
