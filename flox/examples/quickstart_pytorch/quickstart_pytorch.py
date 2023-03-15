@@ -101,14 +101,14 @@ def main():
 
     ep1 = "fb93a1c2-a8d7-49f3-ad59-375f4e298784"
 
-    eps = [ep1]
+    eps = [ep1, "fake1", "fake2"]
     logger.info(f"Endpoints: {eps}")
 
     flox_controller = PyTorchController(
         endpoint_ids=eps,
         num_samples=100,
         epochs=1,
-        rounds=1,
+        rounds=3,
         client_logic=torch_client,
         model_trainer=torch_trainer,
         executor_type="local",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
@@ -118,7 +118,7 @@ def main():
         dataset_name=torchvision.datasets.CIFAR10,
         preprocess=True,
         tasks_per_endpoint=1,
-        csv_filename="test_pytorch_eval.csv",
+        csv_filename="test_evaluation_3.csv",
     )
 
     logger.info("STARTING FL TORCH FLOW...")

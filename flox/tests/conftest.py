@@ -64,7 +64,7 @@ def tf_controller():
         path_dir=".",
         x_test=x_test,
         y_test=y_test,
-        data_source="keras",
+        data_source="framework",
         dataset_name="fashion_mnist",
         preprocess=True,
     )
@@ -174,6 +174,7 @@ def pytorch_controller():
         executor_type="local",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         testloader=testloader,
         dataset_name=torchvision.datasets.CIFAR10,
+        data_source="framework",
     )
 
     return flox_controller

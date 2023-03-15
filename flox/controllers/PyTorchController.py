@@ -10,7 +10,7 @@ class PyTorchController(MainController):
         super().__init__(*args, **kwargs)
         self.testloader = testloader
 
-    def create_config(self, num_s, num_epoch, path_d):
+    def create_config(self, num_s, num_epoch, path_d, *args, **kwargs):
         config = {
             "num_samples": num_s,
             "epochs": num_epoch,

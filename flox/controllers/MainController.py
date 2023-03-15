@@ -119,10 +119,11 @@ class MainController(FloxControllerLogic):
         "data_source",
         "round_number",
         "n_clients_provided",
-        "n_clients_participated",
+        "n_tasks_retrieved",
         "round_aggregated_accuracy",
         "round_aggregated_loss",
         "round_aggregation_runtime",
+        "running_average_aggregation",
         "total_round_runtime",
         "round_start_time",
         "round_end_time",
@@ -321,7 +322,7 @@ class MainController(FloxControllerLogic):
                     )
                     executor.endpoint_id = ep.id
 
-                    for i in self.tasks_per_endpoint:
+                    for i in range(ep.tasks_per_endpoint):
                         task_data = TaskData()
                         task_data.broadcast_start_timestamp = datetime.utcnow()
                         if self.executor_type == "local":
@@ -372,6 +373,15 @@ class MainController(FloxControllerLogic):
             If using FuncXExecutor/ThreadPoolExecutor, this would be a list of futures
             funcX/ThreadPoolExecutor returns after you submit functions to endpoints.
 
+        self.running_average
+            if self.running_average is True, aggregates the model weights
+            as a simple average on the fly as they are returned from the Executor.
+            This speeds up the total processing time when you have many endpoints and aggregating
+            all of them in a single operation takes too long. Note that the aggregated model
+            will be slightly different from what you would get if you used on_model_aggregate
+            on all of the weights in a single operation. This is because of the reiterative
+            floating point averaging.
+
         Returns
         -------
         results: Dict
@@ -384,7 +394,12 @@ class MainController(FloxControllerLogic):
         """
         model_weights = []
         samples_count = []
-        n_clients_participated = 0
+        n_tasks_retrieved = 0
+
+        n_aggregated = 0
+        n_total = 0
+        running_average = None
+        total_aggregation_runtime = 0
 
         tasks_queue = deque(list(tasks.keys()))
         logger.info("Starting to retrieve results from endpoints")
@@ -400,10 +415,23 @@ class MainController(FloxControllerLogic):
                 res = task_data.future.result()
                 logger.warning(f"Retrieved task {task_data.future}")
 
-                model_weights.append(res["model_weights"])
+                new_weights = res["model_weights"]
+                model_weights.append(new_weights)
                 task_samples = res.get("samples_count", None)
                 samples_count.append(task_samples)
-                n_clients_participated += 1
+                n_tasks_retrieved += 1
+
+                if self.running_average:
+                    aggregation_start = timer()
+                    (
+                        running_average,
+                        n_aggregated,
+                        n_total,
+                    ) = self.update_running_average(
+                        running_average, new_weights, n_aggregated, n_total
+                    )
+                    aggregation_runtime = timer() - aggregation_start
+                    total_aggregation_runtime += aggregation_runtime
 
                 try:
                     task_data.funcx_uuid = task_data.future.task_id
@@ -437,7 +465,9 @@ class MainController(FloxControllerLogic):
             "model_weights": model_weights,
             "samples_count": samples_count,
             "bias_weights": fractions,
-            "n_clients_participated": n_clients_participated,
+            "n_tasks_retrieved": n_tasks_retrieved,
+            "running_average_weights": running_average,
+            "total_aggregation_runtime": total_aggregation_runtime,
         }
 
     def on_model_aggregate(self, results: Dict) -> NDArrays:
@@ -522,14 +552,12 @@ class MainController(FloxControllerLogic):
             # broadcast the model
             tasks = self.on_model_broadcast()
 
+            results = self.on_model_receive(tasks)
             if self.running_average:
-                updated_weights = self.tasks_to_running_average(tasks)[
-                    "running_average_weights"
-                ]
-            else:
-                # process & decrypt the results
-                results = self.on_model_receive(tasks)
+                updated_weights = results["running_average_weights"]
+                aggregation_runtime = results["total_aggregation_runtime"]
 
+            else:
                 # aggregate the weights
                 updated_weights, aggregation_runtime = self.on_model_aggregate(results)
 
@@ -559,6 +587,9 @@ class MainController(FloxControllerLogic):
                     round_start_timestamp=round_start_timestamp,
                     round_end_timestamp=round_end_timestamp,
                 )
+
+            # clean up old tasks to prepare for the new round
+            self.after_round_cleanup()
 
     def record_experiment(
         self,
@@ -592,14 +623,15 @@ class MainController(FloxControllerLogic):
                     "data_source": self.data_source,
                     "round_number": round_number,
                     "n_clients_provided": len(self.endpoints),
-                    "n_clients_participated": retrieved_results.get(
-                        "n_clients_participated", None
+                    "n_tasks_retrieved": retrieved_results.get(
+                        "n_tasks_retrieved", None
                     ),
                     "round_aggregated_accuracy": evaluation_results["metrics"][
                         "accuracy"
                     ],
                     "round_aggregated_loss": evaluation_results["loss"],
                     "round_aggregation_runtime": aggregation_runtime,
+                    "running_average_aggregation": self.running_average,
                     "total_round_runtime": total_round_runtime,
                     "round_start_time": round_start_timestamp,
                     "round_end_time": round_end_timestamp,
@@ -638,82 +670,32 @@ class MainController(FloxControllerLogic):
             for row in rows:
                 writer.writerow(row)
 
-    def tasks_to_running_average(self, tasks: deque):
-        """Serves as a modified combination of on_model_receive and on_model_aggregate.
-        Aggregates the model weights
-        as a simple average on the fly as they are returned from the Executor.
-        This speeds up the total processing time when you have many endpoints and aggregating
-        all of them in a single operation takes too long. Note that the aggregated model
-        will be slightly different from what you would get if you used on_model_aggregate
-        on all of the weights in a single operation. This is because of the reiterative
-        floating point averaging.
+    def update_running_average(
+        self, running_average, new_weights, n_aggregated, n_total
+    ):
+        if running_average is None:
+            logger.debug(
+                "the running average is NONE, instantiating it for the first time"
+            )
+            running_average = new_weights
+            n_aggregated += 1
+            n_total += 1
+        else:
+            n_total += 1
+            running_weights = [
+                (n_aggregated / n_total),
+                (n_total - n_aggregated) / n_total,
+            ]
+            logger.info(
+                f"The weights are {running_weights} and sum up to {sum(running_weights)}"
+            )
+            running_average = np.average(
+                [running_average, new_weights], weights=running_weights, axis=0
+            )
+            n_aggregated += 1
+        return running_average, n_aggregated, n_total
 
-        Parameters
-        ----------
-        tasks: List[futures]
-            A list of tasks/futures with results of the FL training returned from the endpoints.
-            If using FuncXExecutor/ThreadPoolExecutor, this would be a list of futures
-            funcX/ThreadPoolExecutor returns after you submit functions to endpoints.
-
-        Returns
-        -------
-        results: Dict
-            FL results extracted from tasks, formatted as a dictionary. For example:
-            results = {
-                "model_weights": model_weights,
-                "samples_count": samples_count,
-                "bias_weights": fractions,
-                "running_average_weights": running_average
-            }
-        """
-        model_weights = []
-        samples_count = []
-
-        n_aggregated = 0
-        n_total = 0
-        running_average = None
-
-        logger.info("Starting to retrieve results from endpoints")
-        while tasks and (timer() - self.task_start_time) < self.timeout:
-            t = tasks.popleft()
-            if t.done():
-                res = t.result()
-                new_weights = res["model_weights"]
-                model_weights.append(new_weights)
-                samples_count.append(res["samples_count"])
-                # update running average
-                if running_average is None:
-                    logger.debug(
-                        "the running average is NONE, instantiating it for the first time"
-                    )
-                    running_average = new_weights
-                    n_aggregated += 1
-                    n_total += 1
-                else:
-                    n_total += 1
-                    running_weights = [
-                        (n_aggregated / n_total),
-                        (n_total - n_aggregated) / n_total,
-                    ]
-                    logger.info(
-                        f"The weights are {running_weights} and sum up to {sum(running_weights)}"
-                    )
-                    running_average = np.average(
-                        [running_average, new_weights], weights=running_weights, axis=0
-                    )
-                    n_aggregated += 1
-
-            else:
-                tasks.append(t)
-                logger.info(f"Retrieved results from endpoints {t}")
-
-        samples_count = np.array(samples_count)
-        total = sum(samples_count)
-        fractions = samples_count / total
-        logger.info("Finished retrieving all results from the endpoints")
-        return {
-            "model_weights": model_weights,
-            "samples_count": samples_count,
-            "bias_weights": fractions,
-            "running_average_weights": running_average,
-        }
+    def after_round_cleanup(self):
+        self.tasks = {}
+        for ep in self.endpoints:
+            ep.task_ids = []

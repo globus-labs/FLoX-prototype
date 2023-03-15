@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 def main():
 
-    ep1 = "a0147aaf-8fa1-4420-8548-5abb8207cdbb"
-    ep2 = "b8ceb5a3-a80c-4544-afdd-debc52e4055c"
+    ep1 = "7a9e7979-b88c-4494-9636-16970b7199e8"
+    ep2 = "02cb5f88-9313-423f-9f5e-02dd7f8a4137"
 
     eps = [ep1, ep2]
     logger.info(f"Endpoints: {eps}")
@@ -56,15 +56,15 @@ def main():
         rounds=3,
         client_logic=tf_client,
         global_model=global_model,
-        executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
+        executor_type="local",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         model_trainer=tf_trainer,
         x_test=x_test,
         y_test=y_test,
         data_source="framework",
         dataset_name="fashion_mnist",
         preprocess=True,
-        tasks_per_endpoint=2,
-        csv_filename="test_evaluation_2.csv",
+        tasks_per_endpoint=[1, 2],
+        csv_filename="test_evaluation_3.csv",
     )
 
     logger.info("STARTING FL FLOW...")

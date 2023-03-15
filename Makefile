@@ -10,6 +10,10 @@ test:
 test_unit:
 	pytest flox/tests/unit --disable-warnings
 
+.PHONY: test_integration
+test_integration:
+	pytest flox/tests/integration --disable-warnings
+
 .PHONY: lint
 lint:
 	pylint flox/
