@@ -25,7 +25,7 @@ class PyTorchController(MainController):
     def on_model_update(self, updated_weights) -> None:
         self.model_trainer.set_weights(updated_weights)
 
-    def on_model_evaluate(self):
+    def on_model_evaluate(self, *args, **kwargs):
         results = self.model_trainer.evaluate(self.testloader)
         print(results)
         return results

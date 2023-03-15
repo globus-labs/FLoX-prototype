@@ -10,7 +10,7 @@ class TaskData:
     local_id: str = None
     funcx_uuid: str = None
     future: Future = None
-    # model_weights: NDArrays = None
+    model_weights: NDArrays = None
     broadcast_start_timestamp: datetime = None
     broadcast_finish_timestamp: datetime = None
     future_completed_timestamp: datetime = None

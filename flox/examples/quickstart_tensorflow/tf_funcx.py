@@ -17,8 +17,9 @@ def main():
 
     ep1 = "7a9e7979-b88c-4494-9636-16970b7199e8"
     ep2 = "02cb5f88-9313-423f-9f5e-02dd7f8a4137"
+    ep3 = "aed3a876-d022-42d5-8f7f-bb1ad75266f4"
 
-    eps = [ep1, ep2]
+    eps = [ep1, ep2, ep3]
     logger.info(f"Endpoints: {eps}")
 
     # `fashion_mnist` images are grayscale, 28 x 28 pixels in size
@@ -51,20 +52,22 @@ def main():
 
     flox_controller = TensorflowController(
         endpoint_ids=eps,
-        num_samples=[100, 200],
-        epochs=[2, 4],
-        rounds=3,
+        num_samples=[100, 200, 300],
+        epochs=[2, 3, 4],
+        rounds=1,
         client_logic=tf_client,
         global_model=global_model,
-        executor_type="local",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
+        executor_type="funcx",  # choose "funcx" for FuncXExecutor, "local" for ThreadPoolExecutor
         model_trainer=tf_trainer,
         x_test=x_test,
         y_test=y_test,
         data_source="framework",
         dataset_name="fashion_mnist",
         preprocess=True,
-        tasks_per_endpoint=[1, 2],
+        tasks_per_endpoint=[1, 3, 2],
         csv_filename="test_evaluation_3.csv",
+        evaluate_individual_models=True,
+        running_average=True,
     )
 
     logger.info("STARTING FL FLOW...")

@@ -180,6 +180,7 @@ class MainController(FloxControllerLogic):
         running_average: bool = False,
         tasks_per_endpoint: Union[int, List[int]] = 1,
         csv_filename: str = None,
+        evaluate_individual_models: bool = False,
     ):
         self.endpoint_ids = endpoint_ids
         self.num_samples = num_samples
@@ -204,6 +205,7 @@ class MainController(FloxControllerLogic):
         self.running_average = running_average
         self.tasks_per_endpoint = tasks_per_endpoint
         self.csv_filename = csv_filename
+        self.evaluate_individual_models = evaluate_individual_models
         self.funcx_client = FuncXClient(http_timeout=60)
         self.endpoints = []
         self.tasks = {}
@@ -416,6 +418,7 @@ class MainController(FloxControllerLogic):
                 logger.warning(f"Retrieved task {task_data.future}")
 
                 new_weights = res["model_weights"]
+                task_data.model_weights = new_weights
                 model_weights.append(new_weights)
                 task_samples = res.get("samples_count", None)
                 samples_count.append(task_samples)
@@ -512,7 +515,7 @@ class MainController(FloxControllerLogic):
         self.model_trainer.set_weights(self.global_model, updated_weights)
         logger.info("Updated the global model's weights")
 
-    def on_model_evaluate(self):
+    def on_model_evaluate(self, model=None):
         """Evaluates the given model using provided test data.
         The method might need to be overriden depending on the Machine Learning framework as use.
 
@@ -526,9 +529,7 @@ class MainController(FloxControllerLogic):
         """
         if self.x_test is not None and self.y_test is not None:
             logger.info("Starting evaluation")
-            results = self.model_trainer.evaluate(
-                self.global_model, self.x_test, self.y_test
-            )
+            results = self.model_trainer.evaluate(model, self.x_test, self.y_test)
             logger.info(f"Evaluation results: {results}")
             return results
         else:
@@ -569,7 +570,29 @@ class MainController(FloxControllerLogic):
 
             # evaluate the model
             logger.info(f"Round {i} evaluation results: ")
-            evaluation_results = self.on_model_evaluate()
+            evaluation_results = self.on_model_evaluate(model=self.global_model)
+
+            # evaluate individual models (for now only for Tensorflow)
+            if self.evaluate_individual_models:
+                model_architecture = self.model_trainer.get_architecture(
+                    self.global_model
+                )
+                for task in self.tasks.values():
+                    # take the weights
+                    model_weights = task.model_weights
+
+                    # create models & assign weights
+                    model = self.model_trainer.create_model(model_architecture)
+                    self.model_trainer.compile_model(model)
+                    self.model_trainer.set_weights(model, model_weights)
+
+                    # evaluate each model
+                    logger.info(f"Evaluation of model from task {task.funcx_uuid}:")
+                    individual_eval_results = self.on_model_evaluate(model=model)
+
+                    # assign it to task_data for each task
+                    task.model_accuracy = individual_eval_results["metrics"]["accuracy"]
+                    task.model_loss = individual_eval_results["loss"]
 
             # store results in .csv
             if self.csv_filename:
@@ -606,8 +629,6 @@ class MainController(FloxControllerLogic):
         round_start_timestamp,
         round_end_timestamp,
     ):
-        # evaluate individual models
-
         # unpack lists & dics
         rows = []
         logger.info("Starting to create data rows")
