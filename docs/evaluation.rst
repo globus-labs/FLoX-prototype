@@ -54,29 +54,21 @@ As of now, these are the attributes that are being recorded by FLoX:
 
 * "dataset_name" - dataset name
 
-* "data_source" - source of the data for FL training ("local"/"framework"). "local" means that the data was
-retrieved from a file stored locally. "framework" means that the data was retrieved
- from one of the default datasets such as ``keras.datasets.mnist``)
+* "data_source" - source of the data for FL training ("local"/"framework"). "local" means that the data was retrieved from a file stored locally. "framework" means that the data was retrieved from one of the default datasets such as ``keras.datasets.mnist``)
 
 * "round_number" - the sequence of the FL round starting from index 0
 
-* "n_clients_provided" - how many endpoints the user provided in the ``endpoind_ids`` argument.
-The number of clients/endpoints that actually participated in the training can differ if the endpoints
-were not available
+* "n_clients_provided" - how many endpoints the user provided in the ``endpoind_ids`` argument. The number of clients/endpoints that actually participated in the training can differ if the endpoints were not available
 
 * "n_tasks_retrieved" - how many tasks were completed during the corresponding round
 
-* "round_aggregated_accuracy" - accuracy of the aggregated model during the corresponding round, as per evaluation on
-the provided test data.
+* "round_aggregated_accuracy" - accuracy of the aggregated model during the corresponding round, as per evaluation on the provided test data.
 
-* "round_aggregated_loss" - loss of the aggregated model during the corresponding round, as per evaluation on
-the provided test data.
+* "round_aggregated_loss" - loss of the aggregated model during the corresponding round, as per evaluation on the provided test data.
 
 * "round_aggregation_runtime" - runtime of aggregation during the corresponding round
 
-* "running_average_aggregation" - if the attribute ``running_average`` was set to ``True``,
-this will store the total aggregation runtime during the corresponding round. See the docstring for
-``MainController.on_model_receive()`` to learn more about running average aggregation.
+* "running_average_aggregation" - if the attribute ``running_average`` was set to ``True``, this will store the total aggregation runtime during the corresponding round. See the docstring for ``MainController.on_model_receive()`` to learn more about running average aggregation.
 
 * "total_round_runtime" - the total runtime of the round, *excluding* evaluation.
 
@@ -88,8 +80,7 @@ this will store the total aggregation runtime during the corresponding round. Se
 
 * "endpoint_custom_name" - user-provided endpoint name to help with tracking endpoints
 
-* "endpoint_latest_status" - latest endpoint status ("online"/"offline"/"error"). Only applicable when
-using the ``funcx`` executor.
+* "endpoint_latest_status" - latest endpoint status ("online"/"offline"/"error"). Only applicable when using the ``funcx`` executor.
 
 * "endpoint_ram" - ram of the endpoint as returned by ``psutil.virtual_memory().total``
 
@@ -101,8 +92,7 @@ using the ``funcx`` executor.
 
 * "number_of_tasks" - number of tasks submitted to the corresponding endpoint
 
-* "desired_n_samples" - desired number of samples for the task. Sometimes there may not be
-as many samples as the user indicated, so the actual number of samples used in training may differ
+* "desired_n_samples" - desired number of samples for the task. Sometimes there may not be as many samples as the user indicated, so the actual number of samples used in training may differ
 
 * "epochs" - desired number of samples for training.
 
@@ -110,8 +100,7 @@ as many samples as the user indicated, so the actual number of samples used in t
 
 * "task_local_uuid" - an automatically assigned UUID to the task used for internal task tracking
 
-* "task_funcx_uuid" - a UUID assigned by the ``funcX`` service when the task is submitted to the endpoint
-if using "local" executor type, this will equate for NaN
+* "task_funcx_uuid" - a UUID assigned by the ``funcX`` service when the task is submitted to the endpoint if using "local" executor type, this will equate for NaN
 
 * "file_size" - size of the model being transferred to the endpoint
 
