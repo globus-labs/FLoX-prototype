@@ -23,3 +23,4 @@ Contents
    usage
    install
    logic
+   evaluation
