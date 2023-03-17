@@ -65,7 +65,7 @@ def main():
         dataset_name="fashion_mnist",
         preprocess=True,
         tasks_per_endpoint=[1, 3, 2],
-        csv_filename="test_evaluation_3.csv",
+        csv_filename="test_evaluation_3.csv",  # read more on Evaluation in docs/evaluation.rst
         evaluate_individual_models=True,
         running_average=True,
     )

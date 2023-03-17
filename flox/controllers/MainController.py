@@ -106,10 +106,22 @@ class MainController(FloxControllerLogic):
         This speeds up the total processing time when you have many endpoints and aggregating
         all of them in a single operation takes too long
 
+    tasks_per_endpoint: Union[int, List[int]] = 1
+        tasks_per_endpoint instructs how many tasks should be submitted to each endpoint.
+        Typically the tasks will be executed using Threading or multi-processing. You can
+        supply an int or a list with a different number of tasks per endpoint for each endpoint
+
+    csv_filename: str = None
+        csv_filename should be the .csv file where you want your experiment metrics to be stored
+        if no filename supplied, the metrics will not be recorded.
+        Read more on Evaluation in docs/evaluation.rst
+
+    evaluate_individual_models: bool = False
+        if True, will evaluate individual models from each task. As of now, this only works for
+        Tensorflow models. Support for PyTorch will be added soon.
     """
 
     AVAILABLE_EXECUTORS = {"local": ThreadPoolExecutor, "funcx": FuncXExecutor}
-    # TODO: verify the header columns
     CSV_HEADER = [
         "experiment_id",
         "experiment_name",
@@ -287,9 +299,6 @@ class MainController(FloxControllerLogic):
             return a list of futures. The futures should support methods .done() and .result()
 
         """
-        # define list storage for results
-        # tasks = deque()
-
         logger.debug(f"Launching the {self.executor} executor")
         with self.executor() as executor:
             # submit the corresponding parameters to each endpoint for a round of FL
@@ -365,7 +374,7 @@ class MainController(FloxControllerLogic):
 
         return self.tasks
 
-    def on_model_receive(self, tasks: dict) -> Dict:
+    def on_model_receive(self, tasks: dict, running_average_flag: bool = False) -> Dict:
         """Processes returned tasks from on_model_broadcast.
 
         Parameters
@@ -375,8 +384,8 @@ class MainController(FloxControllerLogic):
             If using FuncXExecutor/ThreadPoolExecutor, this would be a list of futures
             funcX/ThreadPoolExecutor returns after you submit functions to endpoints.
 
-        self.running_average
-            if self.running_average is True, aggregates the model weights
+        running_average_flag
+            if running_average_flag is True, aggregates the model weights
             as a simple average on the fly as they are returned from the Executor.
             This speeds up the total processing time when you have many endpoints and aggregating
             all of them in a single operation takes too long. Note that the aggregated model
@@ -424,7 +433,7 @@ class MainController(FloxControllerLogic):
                 samples_count.append(task_samples)
                 n_tasks_retrieved += 1
 
-                if self.running_average:
+                if running_average_flag:
                     aggregation_start = timer()
                     (
                         running_average,
@@ -553,7 +562,9 @@ class MainController(FloxControllerLogic):
             # broadcast the model
             tasks = self.on_model_broadcast()
 
-            results = self.on_model_receive(tasks)
+            results = self.on_model_receive(
+                tasks, running_average_flag=self.running_average
+            )
             if self.running_average:
                 updated_weights = results["running_average_weights"]
                 aggregation_runtime = results["total_aggregation_runtime"]
